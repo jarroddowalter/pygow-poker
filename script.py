@@ -31,7 +31,10 @@ def deal_game():
 	dealer_hand = game_deck[:7]
 	del game_deck[:7]
 
+	print("Dealer: ", end='')
 	pretty_print_hand(dealer_hand)
+	print()
+	print("Player: ", end='')
 	pretty_print_hand(player_hand)
 
 def pretty_print_hand(hand):
@@ -43,7 +46,7 @@ def pretty_print_hand(hand):
 		elif card == "JKR":
 			console.print(" " + card + " ", style="black on white b", end='')\
 		
-		if len(hand) != i-1:
+		if len(hand) != i+1:
 			console.print(" ", end='')
 		else:
 			console.print()
