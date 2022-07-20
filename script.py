@@ -60,25 +60,58 @@ def pretty_print_hand(hand: array):
 			console.print()
 
 def sort_hand(hand: array):
-	num_order = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'JKR')
-	suit_order = ("♦", "♥", "♣", "♠")
+	NUM_ORDER = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'JKR')
+	SUIT_ORDER = ("♦", "♥", "♣", "♠")
+	
+	sorted_hand = []
 
 	def get_card_num_order(card):
-		for i, item in enumerate(num_order):
+		for i, item in enumerate(NUM_ORDER):
 			if card == "JKR":
 				return 13
 			elif card[0] == item[0]:
 				return i
 	
 	def get_card_suit_order(card):
-		for i, item in enumerate(suit_order):
+		for i, item in enumerate(SUIT_ORDER):
 			if card == "JKR":
 				return 4
 			elif card[-1] == item:
 				return i
 	
-	temp_hand = hand
-	sorted_hand = []
+	
+	##sort by order > suit > straight > flush
+	
+	for i, card in enumerate(hand):
+		##on first iteration just add first card to sorted_hand
+		if i == 0:
+			sorted_hand.append(card)
+			continue
+
+		##get order position and suit of current card
+		current_card_order = get_card_num_order(card)
+		current_card_suit = get_card_suit_order(card)
+
+		##loop through sorted hand until current_card_order < sorted_card_order then add card to sorted hand
+		for j, item in enumerate(sorted_hand):
+			if current_card_order < get_card_num_order(item):
+				sorted_hand.insert(j, card)
+				break
+			elif current_card_order == get_card_num_order(item):
+				#if pair, three, or four of kind sort by suit
+				if current_card_suit < get_card_suit_order(item):
+					sorted_hand.insert(j, card)
+					break
+				elif j+1 == len(sorted_hand):
+					sorted_hand.append(card)
+					break
+			elif current_card_order > get_card_num_order(item) and j+1 == len(sorted_hand):
+				sorted_hand.append(card)
+				break
+	
+	return sorted_hand
+			
+def count_hand(hand:array):
 	has_joker = False
 	suit_count = {
 		'♠': 0,
@@ -101,30 +134,9 @@ def sort_hand(hand: array):
 		'K': 0,
 		'A': 0
 	}
-
-	##sort by order > suit > straight > flush
-	
-	##sort order
-	for i, card in enumerate(temp_hand):
-		##on first iteration just add first card to sorted_hand
-		if i == 0:
-			sorted_hand.append(card)
-			continue
-
-		##get order position of current card
-		current_card_order = get_card_num_order(card)
-
-		##loop through sorted hand until current_card_order < sorted_card_order then add card to sorted hand
-		for j, item in enumerate(sorted_hand):
-			if current_card_order < get_card_num_order(item):
-				sorted_hand.insert(j, card)
-				break
-			elif current_card_order >= get_card_num_order(item) and j+1 == len(sorted_hand):
-				sorted_hand.append(card)
-				break
-	
+		
 	##count num and suits
-	for i, card in enumerate(temp_hand):
+	for i, card in enumerate(hand):
 		if card == "JKR":
 			has_joker = True
 		else:
@@ -134,17 +146,12 @@ def sort_hand(hand: array):
 			elif card[0] == '1':
 				num_count['10'] += 1
 
-	##sort suit
-	temp_hand = sorted_hand
-	# sorted_hand = []
-
-
 
 	## for i, card in enumerate(temp_hand):
 	## 	num_count[card[0]]
 	
 	console.print('🃏' + str(has_joker), suit_count, num_count)
-	return sorted_hand
+	
 	
 	
 deal_game()
