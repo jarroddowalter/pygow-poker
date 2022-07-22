@@ -1,26 +1,178 @@
 from array import array
 import random
+from turtle import st
+from unittest import suite
 from rich import print
 from rich.console import Console
 
 console = Console()
 
 DECK = [
-'2♥', '2♦', '2♠', '2♣',
-'3♥', '3♦', '3♠', '3♣',
-'4♥', '4♦', '4♠', '4♣',
-'5♥', '5♦', '5♠', '5♣',
-'6♥', '6♦', '6♠', '6♣',
-'7♥', '7♦', '7♠', '7♣',
-'8♥', '8♦', '8♠', '8♣',
-'9♥', '9♦', '9♠', '9♣',
-'10♥', '10♦', '10♠', '10♣',
-'J♥', 'J♦', 'J♠', 'J♣',
-'Q♥', 'Q♦', 'Q♠', 'Q♣',
-'K♥', 'K♦', 'K♠', 'K♣',
-'A♥', 'A♦', 'A♠', 'A♣',
+'02h', '02d', '02s', '02c',
+'03h', '03d', '03s', '03c',
+'04h', '04d', '04s', '04c',
+'05h', '05d', '05s', '05c',
+'06h', '06d', '06s', '06c',
+'07h', '07d', '07s', '07c',
+'08h', '08d', '08s', '08c',
+'09h', '09d', '09s', '09c',
+'10h', '10d', '10s', '10c',
+'11h', '11d', '11s', '11c',
+'12h', '12d', '12s', '12c',
+'13h', '13d', '13s', '13c',
+'14h', '14d', '14s', '14c',
 'JKR',
 ]
+
+SUIT_ORDER = ['d', 'h', 'c', 's']
+
+def format_card(card:str): ## returns formatted card string
+	converted_card = ''
+
+	match card[:2]: ## convert num
+		case '02':
+			converted_card = '2'
+		case '03':
+			converted_card = '3'
+		case '04':
+			converted_card = '4'
+		case '05':
+			converted_card = '5'
+		case '06':
+			converted_card = '6'
+		case '07':
+			converted_card = '7'
+		case '08':
+			converted_card = '8'
+		case '09':
+			converted_card = '9'
+		case '10':
+			converted_card = '10'
+		case '11':
+			converted_card = 'J'
+		case '12':
+			converted_card = 'Q'
+		case '13':
+			converted_card = 'K'
+		case '14':
+			converted_card = 'A'
+		case 'JK':
+			converted_card = 'JKR'
+	
+	match card[-1]: ## convert suit
+		case 'h':
+			converted_card = converted_card + '♥'
+		case 'd':
+			converted_card = converted_card + '♦'
+		case 's':
+			converted_card = converted_card + '♠'
+		case 'c':
+			converted_card = converted_card + '♣'
+
+	return converted_card
+
+def format_deck(deck:list): ## returns formated list
+	converted_deck = []
+
+	for card in deck:
+		converted_deck.append(format_card(card))
+
+	return converted_deck
+
+def sort_hand(hand:list): ## takes preformatted hand
+	global SUIT_ORDER
+	hand.sort()
+
+	def get_card_suit_order(card:str): ## returns index of suit order
+		for i, item in enumerate(SUIT_ORDER):
+			if card == "JKR":
+				return 4
+			elif card[-1] == item:
+				return i
+
+	i = 0
+	while i < len(hand):
+		if hand[i][:2] == hand[i-1][:2] and get_card_suit_order(hand[i]) < get_card_suit_order(hand[i-1]):
+			hand.insert(i-1, hand.pop(i))
+			i = 0
+		else:
+			i += 1
+	
+	return hand
+
+def read_hand(hand:list): ## returns poker hand as a dict
+	outcome = {}
+	hand = sort_hand(hand)
+
+	## count num and suits
+	joker_state = None
+	num_count = {}
+	suit_count = {}
+
+	for card in hand:
+		if card == "JKR":
+			joker_state = 'ace'
+		else:
+			if num_count.get(card[:2], False): 
+				num_count[card[:2]] += 1
+			else:
+				num_count[card[:2]] = 1
+			if suit_count.get(card[-1], False):
+				suit_count[card[-1]] += 1
+			else:
+				suit_count[card[-1]] = 1
+
+	## get multiples
+	multiples = {}
+	for key, val in num_count.items():
+		if val > 1:
+			multiples[key] = val
+
+	## get straight
+	straight = []
+
+	## joker check
+	## 
+
+	## get flush
+	flush = None
+	for key, val in suit_count.items():
+		if val >= 7 or (val == 6 and joker_state):
+			flush = f'7{key}'
+			if val == 6:
+				joker_state = '7flush'
+		elif val >= 5 or (val == 4 and joker_state):
+			flush = f'5{key}'
+			if val == 4:
+				joker_state = '5flush'
+
+	## get high card remainder
+
+	print(format_deck(hand), f'joker_state = {joker_state}', f'num_count= {num_count}', f'suit_count= {suit_count}', f'multiples= {multiples}', f'straight= {straight}', f'flush= {flush}')
+
+	return outcome
+
+	## 2 - Ace, High, [remainder order]
+	## 2 - Ace, Pair, [remainder order]
+	## 2 - Ace, 2 - Ace, Two Pair, [remainder order]
+	## 2 - Ace, Three-of-a-kind, [remainder order]
+	## [straight order], Straight, [remainder order]
+	## suit, Flush, [remainder order]
+	## 2 - Ace, 2 - Ace, Full House, [remainder order]
+	## 2 - Ace, Four-of-a-kind, [remainder order]
+	## [straight order], suit, Straight Flush, [remainder order]
+	## Royal Flush, [remainder order]
+	## Five Aces, [remainder order]
+	## 7 Card Straight Flush with Joker, [remainder order]
+	## Royal Flush Plus Royal Match, [remainder order]
+	## 7 Card Straight Flush, No Joker, [remainder order]
+
+
+
+
+
+
+
 
 player_hand = dealer_hand = [] 
 split_player_hands = split_dealer_hands = [[],[]] ##[H, L]
@@ -59,106 +211,10 @@ def pretty_print_hand(hand: array):
 		else:
 			console.print()
 
-def sort_hand(hand: array):
-	NUM_ORDER = ('2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', 'JKR')
-	SUIT_ORDER = ("♦", "♥", "♣", "♠")
-	
-	sorted_hand = []
-
-	def get_card_num_order(card):
-		for i, item in enumerate(NUM_ORDER):
-			if card == "JKR":
-				return 13
-			elif card[0] == item[0]:
-				return i
-	
-	def get_card_suit_order(card):
-		for i, item in enumerate(SUIT_ORDER):
-			if card == "JKR":
-				return 4
-			elif card[-1] == item:
-				return i
-	
-	
-	##sort by order > suit > straight > flush
-	
-	for i, card in enumerate(hand):
-		##on first iteration just add first card to sorted_hand
-		if i == 0:
-			sorted_hand.append(card)
-			continue
-
-		##get order position and suit of current card
-		current_card_order = get_card_num_order(card)
-		current_card_suit = get_card_suit_order(card)
-
-		##loop through sorted hand until current_card_order < sorted_card_order then add card to sorted hand
-		for j, item in enumerate(sorted_hand):
-			if current_card_order < get_card_num_order(item):
-				sorted_hand.insert(j, card)
-				break
-			elif current_card_order == get_card_num_order(item):
-				#if pair, three, or four of kind sort by suit
-				if current_card_suit < get_card_suit_order(item):
-					sorted_hand.insert(j, card)
-					break
-				elif j+1 == len(sorted_hand):
-					sorted_hand.append(card)
-					break
-			elif current_card_order > get_card_num_order(item) and j+1 == len(sorted_hand):
-				sorted_hand.append(card)
-				break
-	
-	return sorted_hand
-			
-def count_hand(hand:array):
-	has_joker = False
-	suit_count = {
-		'♠': 0,
-		'♣': 0,
-		'♥': 0,
-		'♦': 0
-	}
-	num_count = {
-		'2': 0,
-		'3': 0,
-		'4': 0,
-		'5': 0,
-		'6': 0,
-		'7': 0,
-		'8': 0,
-		'9': 0,
-		'10': 0,
-		'J': 0,
-		'Q': 0,
-		'K': 0,
-		'A': 0
-	}
-		
-	##count num and suits
-	for i, card in enumerate(hand):
-		if card == "JKR":
-			has_joker = True
-		else:
-			suit_count[card[-1]] += 1
-			if card[0] != '1':
-				num_count[card[0]] += 1
-			elif card[0] == '1':
-				num_count['10'] += 1
 
 
-	## for i, card in enumerate(temp_hand):
-	## 	num_count[card[0]]
-	
-	console.print('🃏' + str(has_joker), suit_count, num_count)
-	
-	
-	
 deal_game()
-print_game_hands()
-dealer_hand = sort_hand(dealer_hand)
-player_hand = sort_hand(player_hand)
-print_game_hands()
+read_hand(player_hand)
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 
