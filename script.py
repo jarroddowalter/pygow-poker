@@ -1,7 +1,5 @@
 from array import array
 import random
-from turtle import st
-from unittest import suite
 from rich import print
 from rich.console import Console
 
@@ -25,6 +23,8 @@ DECK = [
 ]
 
 SUIT_ORDER = ['d', 'h', 'c', 's']
+
+test_hand = ['JKR', '14d', '13s', '11s', '11h', '10c', '04d']
 
 def format_card(card:str): ## returns formatted card string
 	converted_card = ''
@@ -100,18 +100,26 @@ def sort_hand(hand:list): ## takes preformatted hand
 	
 	return hand
 
-def read_hand(hand:list): ## returns poker hand as a dict
-	outcome = {}
+def read_hand(hand:list): ## returns outcome as a dict
+	outcome = {
+		'hand': hand,
+		'rank': '',
+		'rank_points': 0,
+		'has_joker': False,
+		'high_card_order': [],
+		'multiples': {},
+		'straight': [],
+		'flush': [],
+	}
 	hand = sort_hand(hand)
 
 	## count num and suits
-	joker_state = None
 	num_count = {}
 	suit_count = {}
 
 	for card in hand:
 		if card == "JKR":
-			joker_state = 'ace'
+			outcome['has_joker'] = True
 		else:
 			if num_count.get(card[:2], False): 
 				num_count[card[:2]] += 1
@@ -122,56 +130,167 @@ def read_hand(hand:list): ## returns poker hand as a dict
 			else:
 				suit_count[card[-1]] = 1
 
-	## get multiples
-	multiples = {}
+	## get high card order
 	for key, val in num_count.items():
-		if val > 1:
-			multiples[key] = val
+		if key != '14':
+			if val == 1:
+				for card in hand:
+					if card[:2] == key:
+						outcome['high_card_order'].append(card)
+		elif val == 1 or (outcome['has_joker'] and val == 0):
+			for card in hand:
+				if card[:2] == key or card == 'JKR':
+					outcome['high_card_order'].append(card)
+	
 
-	## get straight
-	straight = []
+	## get multiples
+	for key, val in num_count.items():
+		if key != '14':
+			if val > 1:
+				outcome['multiples'][key] = []
+				for card in hand:
+					if card[:2] == key:
+						outcome['multiples'][key].append(card)
+		elif val > 1 or (outcome['has_joker'] and val > 0):
+			outcome['multiples'][key] = []
+			for card in hand:
+				if card[:2] == key or card == 'JKR':
+					outcome['multiples'][key].append(card)
 
-	## joker check
-	## 
+	outcome['multiples'] = dict(reversed(list(outcome['multiples'].items())))
 
 	## get flush
-	flush = None
 	for key, val in suit_count.items():
-		if val >= 7 or (val == 6 and joker_state):
-			flush = f'7{key}'
-			if val == 6:
-				joker_state = '7flush'
-		elif val >= 5 or (val == 4 and joker_state):
-			flush = f'5{key}'
-			if val == 4:
-				joker_state = '5flush'
+		if val >= 5 or (val == 4 and outcome['has_joker']):
+			for card in hand:
+				if card[-1] == key or card == 'JKR':
+					outcome['flush'].append(card)
 
-	## get high card remainder
+	## get straight
+	hand_reversed = list(reversed(hand))
+	for i, card in enumerate(hand_reversed):
+		if i == 0:
+			outcome['straight'].append(card)
+		elif card[:2] == '14':
+			outcome['straight'] = [card]
+		elif int(card[:2]) == int(hand_reversed[i-1][:2]) - 1:
+			outcome['straight'].append(card)
+		elif outcome['has_joker'] and int(card[:2]) == int(hand_reversed[i-1][:2]) - 2:
+			if 'JKR' in outcome['straight']:
+				outcome['straight'] = outcome['straight'][outcome['straight'].index('JKR'):]
+			outcome['straight'].extend(['JKR', card])
+		elif int(card[:2]) == int(outcome['straight'][-1][:2]):
+			if len(outcome['straight']) >= 5:
+				break
+		else:
+			if len(outcome['straight']) >= 5:
+				break
+			else:
+				if outcome['has_joker']:
+					outcome['straight'] = ['JKR', card]
+				else:
+					outcome['straight'] = [card]
 
-	print(format_deck(hand), f'joker_state = {joker_state}', f'num_count= {num_count}', f'suit_count= {suit_count}', f'multiples= {multiples}', f'straight= {straight}', f'flush= {flush}')
+		print(outcome['straight'])
 
+
+
+	if len(outcome['straight']) <  5:
+		outcome['straight'] = []
+	else:
+		outcome['straight'] = list(reversed(outcome['straight']))
+
+	print(outcome)
 	return outcome
 
-	## 2 - Ace, High, [remainder order]
-	## 2 - Ace, Pair, [remainder order]
-	## 2 - Ace, 2 - Ace, Two Pair, [remainder order]
-	## 2 - Ace, Three-of-a-kind, [remainder order]
-	## [straight order], Straight, [remainder order]
-	## suit, Flush, [remainder order]
-	## 2 - Ace, 2 - Ace, Full House, [remainder order]
-	## 2 - Ace, Four-of-a-kind, [remainder order]
-	## [straight order], suit, Straight Flush, [remainder order]
-	## Royal Flush, [remainder order]
-	## Five Aces, [remainder order]
-	## 7 Card Straight Flush with Joker, [remainder order]
-	## Royal Flush Plus Royal Match, [remainder order]
-	## 7 Card Straight Flush, No Joker, [remainder order]
+	# outcome = {
+	#	outcome: '',
+	#	points: 
+	# 	outcome_hand: [],
+	# 	remainder: [] 
+	# }
+
+	## High									100 + 2-14 card val
+	## Pair									200 + 2-14 card val
+	## Two Pair								1000 + 20-140 + 2-14 high pair card val and low pair card val
+	## Three-of-a-kind						2000 + 2-14 card val
+	## Straight								3000 + 1-10 straight rank (10-J-Q-K-A highest)
+	## Flush								4000 + 
+	## Full House							5000 + 20-140  + 2-14 
+	## Four-of-a-kind						6000 + 2-14 car val
+	## Straight Flush						7000 + 1-9 straight rank (A-2-3-4-5 highest)
+	## Royal Flush							8000
+	## Five Aces							9000
 
 
+	## 7 Card Straight Flush with Joker		10000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
+	## Royal Flush Plus Royal Match			20000 + 1-2 royal match rank (A-K > K-Q of same suite/no joker)
+	## 7 Card Straight Flush, No Joker		30000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
 
+	## Remainder							
 
+def house_strat(hand:list):
+	return
+	
+def strat_split(hand:list, strat): ## takes 7 card hand list and strat function and returns a split dict
+	split = {
+		'high_hand': [],
+		'high_outcome': '',
+		'high_points': 0,
+		'low_hand': [],
+		'low_outcome': '',
+		'low_points': 0
+	}
+	high_hand = []
+	low_hand = []
 
+	if len(hand) != 7:
+		print('strat_split error: hand not 7 cards')
+		return
 
+	outcome = read_hand(hand)
+
+	## move correct cards to split dict
+
+	split = {
+		'high_hand': high_hand,
+		'high_outcome': read_hand(high_hand)['outcome'],
+		'high_points': read_hand(high_hand)['points'],
+		'low_hand': low_hand,
+		'low_outcome': '',
+		'low_points': read_hand(low_hand)['points']
+	}
+
+	return split
+
+def custom_split(high_hand:list, low_hand:list): ## takes a high hand list and a low hand list and returns a split dict
+	split = {
+		'high_hand': [],
+		'high_outcome': '',
+		'high_points': 0,
+		'low_hand': [],
+		'low_outcome': '',
+		'low_points': 0
+	}
+
+	## check if high hand is 5 cards, low hand is 2 cards
+	## check if outcome of 5 card hand is better than outcome of 2 card hand
+
+	## use outcome of 7 cards to determine split
+
+	## move correct cards to split dict
+
+	##	get outcomes of both hands
+
+	return split
+
+def determine_winner(player_split:dict, dealer_split:dict):
+	if player_split['high_points'] > dealer_split['high_points'] and player_split['low_points'] > dealer_split['low_points']:
+		return 'player wins'
+	elif player_split['high_points'] > dealer_split['high_points'] or player_split['low_points'] > dealer_split['low_points']:
+		return 'push'
+	else:
+		return 'dealer wins'
 
 
 player_hand = dealer_hand = [] 
@@ -214,7 +333,7 @@ def pretty_print_hand(hand: array):
 
 
 deal_game()
-read_hand(player_hand)
+read_hand(test_hand)
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 
