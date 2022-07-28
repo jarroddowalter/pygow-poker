@@ -19,12 +19,12 @@ DECK = [
 '12h', '12d', '12s', '12c',
 '13h', '13d', '13s', '13c',
 '14h', '14d', '14s', '14c',
-'JKR',
+'JKR'
 ]
 
 SUIT_ORDER = ['d', 'h', 'c', 's']
 
-test_hand = ['JKR', '14d', '13s', '11s', '11h', '10c', '04d']
+test_hand = ['JKR', '04h', '03d', '02h', '06h', '05h', '14h']
 
 def format_card(card:str): ## returns formatted card string
 	converted_card = ''
@@ -108,8 +108,9 @@ def read_hand(hand:list): ## returns outcome as a dict
 		'has_joker': False,
 		'high_card_order': [],
 		'multiples': {},
-		'straight': [],
 		'flush': [],
+		'straight': [],
+		'straight_flush': []
 	}
 	hand = sort_hand(hand)
 
@@ -172,16 +173,23 @@ def read_hand(hand:list): ## returns outcome as a dict
 		if i == 0:
 			outcome['straight'].append(card)
 		elif card[:2] == '14':
-			outcome['straight'] = [card]
-		elif int(card[:2]) == int(hand_reversed[i-1][:2]) - 1:
+			if not outcome['straight'] or outcome['straight'][0] == 'JKR':
+				outcome['straight'] = [card]
+			elif outcome['straight'][-1][:2] == '14' and outcome['flush'] and card[-1] == outcome['flush'][0][-1]: ##if flush and multiples put suit in straight
+				outcome['straight'] = [card]
+		elif hand_reversed[i-1] != 'JKR' and int(card[:2]) == int(hand_reversed[i-1][:2]) - 1:
 			outcome['straight'].append(card)
-		elif outcome['has_joker'] and int(card[:2]) == int(hand_reversed[i-1][:2]) - 2:
+		elif hand_reversed[i-1] != 'JKR' and outcome['has_joker'] and int(card[:2]) == int(hand_reversed[i-1][:2]) - 2:
 			if 'JKR' in outcome['straight']:
-				outcome['straight'] = outcome['straight'][outcome['straight'].index('JKR'):]
+				outcome['straight'] = outcome['straight'][outcome['straight'].index('JKR')+1:]
 			outcome['straight'].extend(['JKR', card])
-		elif int(card[:2]) == int(outcome['straight'][-1][:2]):
-			if len(outcome['straight']) >= 5:
-				break
+		elif outcome['straight'][-1] != 'JKR' and int(card[:2]) == int(outcome['straight'][-1][:2]):
+			if outcome['flush'] and card[-1] == outcome['flush'][0][-1]:
+				outcome['straight'].pop(-1)
+				outcome['straight'].append(card)
+			else:
+				if len(outcome['straight']) >= 5:
+					break
 		else:
 			if len(outcome['straight']) >= 5:
 				break
@@ -191,43 +199,93 @@ def read_hand(hand:list): ## returns outcome as a dict
 				else:
 					outcome['straight'] = [card]
 
-		print(outcome['straight'])
-
-
+	if outcome['has_joker'] and 'JKR' not in outcome['straight']: ## add low JKR
+		outcome['straight'].append('JKR')
+	
+	low_ace = '' ## check low Ace
+	for card in hand_reversed:
+		if card[:2] == '14':
+			low_ace = card
+			if outcome['flush']:
+				if card[-1] == outcome['flush'][0][-1]:
+					break
+				else:
+					continue
+			else:
+				break
+	if outcome['straight'][-1][:2] == '02' and low_ace:
+		outcome['straight'].append(low_ace)
+	elif 'JKR' in outcome['straight'] and outcome['straight'][-1][:2] == '03' and low_ace:
+		if len(outcome['straight']) < 5:
+			outcome['straight'] = outcome['straight'][outcome['straight'].index('JKR')+1:]
+			outcome['straight'].extend(['JKR', low_ace])
+		elif len(outcome['straight']) == 6:
+			outcome['straight'] = outcome['straight'][outcome['straight'].index('JKR')+1:]
+			outcome['straight'].extend(['JKR', low_ace])
 
 	if len(outcome['straight']) <  5:
 		outcome['straight'] = []
 	else:
 		outcome['straight'] = list(reversed(outcome['straight']))
 
-	print(outcome)
-	return outcome
+	## get straight flush
+	if outcome['straight'] and outcome['flush']:
+		used_joker = False
+		for card in outcome['straight']:
+			if card[-1] == outcome['flush'][0][-1]:
+				outcome['straight_flush'].append(card)
+			elif card == 'JKR' and not used_joker:
+					outcome['straight_flush'].append(card)
+					used_joker = True
+			elif 'JKR' in outcome['straight'] and not used_joker:
+					outcome['straight_flush'].append('JKR')
+					used_joker = True
+			else:
+				break
 
-	# outcome = {
-	#	outcome: '',
-	#	points: 
-	# 	outcome_hand: [],
-	# 	remainder: [] 
-	# }
+		if outcome['straight_flush'][-1] == 'JKR' and outcome['straight_flush'][0][:2] == '02': ##orders for highest straight flush rank A-2-3-4-5 with joker
+			outcome['straight_flush'].insert(0, outcome['straight_flush'][-1])
+			del outcome['straight_flush'][-1]
 
-	## High									100 + 2-14 card val
-	## Pair									200 + 2-14 card val
-	## Two Pair								1000 + 20-140 + 2-14 high pair card val and low pair card val
-	## Three-of-a-kind						2000 + 2-14 card val
-	## Straight								3000 + 1-10 straight rank (10-J-Q-K-A highest)
-	## Flush								4000 + 
-	## Full House							5000 + 20-140  + 2-14 
-	## Four-of-a-kind						6000 + 2-14 car val
-	## Straight Flush						7000 + 1-9 straight rank (A-2-3-4-5 highest)
-	## Royal Flush							8000
-	## Five Aces							9000
+		if len(outcome['straight_flush']) <  5:
+			outcome['straight_flush'] = []
 
+	#### Score Hand ####
 
-	## 7 Card Straight Flush with Joker		10000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
-	## Royal Flush Plus Royal Match			20000 + 1-2 royal match rank (A-K > K-Q of same suite/no joker)
 	## 7 Card Straight Flush, No Joker		30000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
 
-	## Remainder							
+	## Royal Flush Plus Royal Match			20000 + 1-2 royal match rank (A-K > K-Q of same suite/no joker)
+
+	## 7 Card Straight Flush with Joker		10000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
+
+
+	## Five Aces							9000
+
+	## Royal Flush							8000
+
+	## Straight Flush						7000 + 1-9 straight rank (A-2-3-4-5 highest)
+
+	## Four-of-a-kind						6000 + 2-14 car val
+
+	## Full House							5000 + 20-140  + 2-14
+
+	## Flush								4000 + 
+
+	## Straight								3000 + 1-10 straight rank (10-J-Q-K-A highest)
+
+	## Three-of-a-kind						2000 + 2-14 card val
+
+	## Two Pair								1000 + 20-140 + 2-14 high pair card val and low pair card val
+
+	## Pair									200 + 2-14 card val
+
+	## High									100 + 2-14 card val
+
+
+	## High Card Remainder	
+
+	print(outcome)
+	return outcome
 
 def house_strat(hand:list):
 	return
@@ -333,7 +391,7 @@ def pretty_print_hand(hand: array):
 
 
 deal_game()
-read_hand(test_hand)
+read_hand(player_hand)
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 
