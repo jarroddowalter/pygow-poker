@@ -24,7 +24,7 @@ DECK = [
 
 SUIT_ORDER = ['d', 'h', 'c', 's']
 
-test_hand = ['JKR', '04h', '03d', '02h', '06h', '05h', '14h']
+test_hand = ['03c', '05h', '06c', '07c', '08h', '09c', '11c']
 
 def format_card(card:str): ## returns formatted card string
 	converted_card = ''
@@ -108,6 +108,7 @@ def read_hand(hand:list): ## returns outcome as a dict
 		'has_joker': False,
 		'high_card_order': [],
 		'multiples': {},
+		'multiples_keys': [],
 		'flush': [],
 		'straight': [],
 		'straight_flush': []
@@ -158,7 +159,7 @@ def read_hand(hand:list): ## returns outcome as a dict
 				if card[:2] == key or card == 'JKR':
 					outcome['multiples'][key].append(card)
 
-	outcome['multiples'] = dict(reversed(list(outcome['multiples'].items())))
+	outcome['multiples_keys'] = list(outcome['multiples'].keys())
 
 	## get flush
 	for key, val in suit_count.items():
@@ -243,7 +244,7 @@ def read_hand(hand:list): ## returns outcome as a dict
 			else:
 				break
 
-		if outcome['straight_flush'][-1] == 'JKR' and outcome['straight_flush'][0][:2] == '02': ##orders for highest straight flush rank A-2-3-4-5 with joker
+		if outcome['straight_flush'] and outcome['straight_flush'][-1] == 'JKR' and outcome['straight_flush'][0][:2] == '02': ##orders for highest straight flush rank A-2-3-4-5 with joker
 			outcome['straight_flush'].insert(0, outcome['straight_flush'][-1])
 			del outcome['straight_flush'][-1]
 
@@ -253,51 +254,146 @@ def read_hand(hand:list): ## returns outcome as a dict
 	#### Score Hand ####
 
 	## 7 Card Straight Flush, No Joker		30000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
+	if len(outcome['straight_flush']) == 7 and not outcome['has_joker']:
+		outcome['rank'] = '7 Card Straight Flush, No Joker'
+		if outcome['straight_flush'][0][:2] == '14':
+			outcome['rank_points'] = 30001
+		else:
+			outcome['rank_points'] = 30000 + int(outcome['straight_flush'][0][:2])
+		return outcome
 
 	## Royal Flush Plus Royal Match			20000 + 1-2 royal match rank (A-K > K-Q of same suite/no joker)
+	r_flush = []
+	r_match = []
+	if outcome['straight_flush'] and (outcome['straight_flush'][-5][:2] == '10' or (outcome['straight_flush'][-5] == 'JKR' and outcome['straight_flush'][-4][:2] == '11')):
+		r_flush = [outcome['straight_flush'][-5], outcome['straight_flush'][-4], outcome['straight_flush'][-3], outcome['straight_flush'][-2], outcome['straight_flush'][-1]]
+		for card in hand:
+			if card not in r_flush:
+				r_match.append(card)
+		if r_match[0][-1] == r_match[1][-1] and r_match[0][:2] == '13' and r_match[1][:2] == '14':
+			outcome['rank'] = 'Royal Flush Plus Royal Match'
+			outcome['rank_points'] = 20000 + 2
+			return outcome
+		if r_match[0][-1] == r_match[1][-1] and r_match[0][:2] == '12' and r_match[1][:2] == '13':
+			outcome['rank'] = 'Royal Flush Plus Royal Match'
+			outcome['rank_points'] = 20000 + 1
+			return outcome
 
 	## 7 Card Straight Flush with Joker		10000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
-
+	if len(outcome['straight_flush']) == 7:
+		outcome['rank'] = '7 Card Straight Flush with Joker'
+		if outcome['straight_flush'][0][:2] == '14':
+			outcome['rank_points'] = 30000 + 1
+		elif outcome['straight_flush'][0] == 'JKR' and outcome['straight_flush'][0][:2] == '09':
+			outcome['rank_points'] = 30000 + 8
+		else:
+			outcome['rank_points'] = 30000 + int(outcome['straight_flush'][0][:2])
+		return outcome
 
 	## Five Aces							9000
+	if '14' in outcome['multiples'] and outcome['multiples']['14'] == 5:
+		outcome['rank'] = 'Five Aces'
+		outcome['rank_points'] = 9000
+		return outcome
 
 	## Royal Flush							8000
+	if outcome['straight_flush'] and (outcome['straight_flush'][-5][:2] == '10' or (outcome['straight_flush'][-5] == 'JKR' and outcome['straight_flush'][-4][:2] == '11')):
+		outcome['rank'] = 'Royal Flush'
+		outcome['rank_points'] = 8000
+		return outcome
 
-	## Straight Flush						7000 + 1-9 straight rank (A-2-3-4-5 highest)
+	## Straight Flush						7000 + 2-10 straight rank (A-2-3-4-5 highest)
+	if outcome['straight_flush']:
+		outcome['rank'] = 'Straight Flush'
+		if outcome['straight_flush'][0][:2] == '14' or outcome['straight_flush'][0] == 'JKR':
+			outcome['rank_points'] = 7000 + 10
+		else:
+			outcome['rank_points'] = 7000 + int(outcome['straight_flush'][-5][:2])
+		return outcome
 
-	## Four-of-a-kind						6000 + 2-14 car val
+	## Four-of-a-kind						6000 + 2-14 card val
+	for key in outcome['multiples_keys']:
+		if len(outcome['multiples'][key]) == 4:
+			outcome['rank'] = 'Four-of-a-kind'
+			outcome['rank_points'] = 6000 + int(key)
+			return outcome
 
-	## Full House							5000 + 20-140  + 2-14
+	## Full House							5000 + 2-14 three-of-a-kind card val
+	three_key = ''
+	two_key = ''
+	for key in outcome['multiples_keys']:
+		if len(outcome['multiples'][key]) == 3:
+			three_key = key
+		elif len(outcome['multiples'][key]) == 2:
+			two_key = key
+	if three_key and two_key:
+		outcome['rank'] = 'Full House'
+		outcome['rank_points'] = 5000 + int(three_key)
+		return outcome
 
-	## Flush								4000 + 
+	## Flush								4000 + 6-14 highest card in flush val
+	if outcome['flush']:
+		outcome['rank'] = 'Flush'
+		if outcome['flush'][-1] == 'JKR':
+			outcome['rank_points'] = 7000 + 140
+		else:
+			outcome['rank_points'] = 7000 + int(outcome['flush'][-1][:2])*10
+		return outcome
 
 	## Straight								3000 + 1-10 straight rank (10-J-Q-K-A highest)
+	if outcome['straight']:
+		outcome['rank'] = 'Straight'
+		if outcome['straight'][-5][:2] == '14' or (outcome['straight'][-5] == 'JKR' and outcome['straight'][-4][:2] == '02'):
+			outcome['rank_points'] = 3000 + 1
+		elif outcome['straight'][-5] == 'JKR' and outcome['straight'][-1][:2] == '14':
+			outcome['rank_points'] = 3000 + 10
+		else:
+			outcome['rank_points'] = 3000 + int(outcome['straight'][-5][:2])
+		return outcome
 
 	## Three-of-a-kind						2000 + 2-14 card val
+	if len(outcome['multiples_keys']) == 1 and len(outcome['multiples'][outcome['multiples_keys'][0]]) == 3:
+		outcome['rank'] = 'Three-of-a-kind'
+		outcome['rank_points'] = 2000 + int(outcome['multiples_keys'][0])
+		return outcome
 
-	## Two Pair								1000 + 20-140 + 2-14 high pair card val and low pair card val
+	## Two Pair								1000 + 2-14 high pair card val
+	if len(outcome['multiples_keys']) >= 2 and len(outcome['multiples'][outcome['multiples_keys'][-1]]) == 2 and len(outcome['multiples'][outcome['multiples_keys'][-2]]) == 2:
+		outcome['rank'] = 'Two Pair'
+		outcome['rank_points'] = 1000 + int(outcome['multiples_keys'][-1])
+		return outcome
 
-	## Pair									200 + 2-14 card val
+	## Pair									100 + 2-14 card val
+	if len(outcome['multiples_keys']) == 1 and len(outcome['multiples'][outcome['multiples_keys'][0]]) == 2:
+		outcome['rank'] = 'Pair'
+		outcome['rank_points'] = 100 + int(outcome['multiples_keys'][0])
+		return outcome
 
-	## High									100 + 2-14 card val
-
-
-	## High Card Remainder	
-
-	print(outcome)
-	return outcome
+	## High									2-14 card val
+	if outcome['high_card_order']:
+		if outcome['high_card_order'][-1] == 'JKR' or outcome['high_card_order'][-1][:2] == '14':
+			outcome['rank'] = 'A High'
+		elif outcome['high_card_order'][-1][:2] == '13':
+			outcome['rank'] = 'K High'
+		elif outcome['high_card_order'][-1][:2] == '12':
+			outcome['rank'] = 'Q High'
+		elif outcome['high_card_order'][-1][:2] == '11':
+			outcome['rank'] = 'J High'
+		else:
+			outcome['rank'] = str(int(outcome['high_card_order'][-1][:2])) + ' High'
+		if outcome['high_card_order'][-1] == 'JKR':
+			outcome['rank_points'] = 14
+		else:
+			outcome['rank_points'] = int(outcome['high_card_order'][-1][:2])
+		return outcome
 
 def house_strat(hand:list):
 	return
 	
 def strat_split(hand:list, strat): ## takes 7 card hand list and strat function and returns a split dict
 	split = {
-		'high_hand': [],
-		'high_outcome': '',
-		'high_points': 0,
-		'low_hand': [],
-		'low_outcome': '',
-		'low_points': 0
+		'high': {},
+		'low': {},
 	}
 	high_hand = []
 	low_hand = []
@@ -308,15 +404,9 @@ def strat_split(hand:list, strat): ## takes 7 card hand list and strat function 
 
 	outcome = read_hand(hand)
 
-	## move correct cards to split dict
-
 	split = {
-		'high_hand': high_hand,
-		'high_outcome': read_hand(high_hand)['outcome'],
-		'high_points': read_hand(high_hand)['points'],
-		'low_hand': low_hand,
-		'low_outcome': '',
-		'low_points': read_hand(low_hand)['points']
+		'high': read_hand(high_hand),
+		'low': read_hand(low_hand),
 	}
 
 	return split
@@ -388,10 +478,9 @@ def pretty_print_hand(hand: array):
 		else:
 			console.print()
 
-
-
 deal_game()
-read_hand(player_hand)
+print(sort_hand(player_hand))
+print(read_hand(player_hand))
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 
