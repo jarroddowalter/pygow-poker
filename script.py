@@ -3,6 +3,7 @@ import random
 from pygments import highlight
 from rich import print
 from rich.console import Console
+from rich.table import Table
 
 console = Console()
 
@@ -74,31 +75,31 @@ def format_card(card:str): ## returns formatted card string
 
 	match card[:2]: ## convert num
 		case '02':
-			converted_card = '2'
+			converted_card = ' 2'
 		case '03':
-			converted_card = '3'
+			converted_card = ' 3'
 		case '04':
-			converted_card = '4'
+			converted_card = ' 4'
 		case '05':
-			converted_card = '5'
+			converted_card = ' 5'
 		case '06':
-			converted_card = '6'
+			converted_card = ' 6'
 		case '07':
-			converted_card = '7'
+			converted_card = ' 7'
 		case '08':
-			converted_card = '8'
+			converted_card = ' 8'
 		case '09':
-			converted_card = '9'
+			converted_card = ' 9'
 		case '10':
 			converted_card = '10'
 		case '11':
-			converted_card = 'J'
+			converted_card = ' J'
 		case '12':
-			converted_card = 'Q'
+			converted_card = ' Q'
 		case '13':
-			converted_card = 'K'
+			converted_card = ' K'
 		case '14':
-			converted_card = 'A'
+			converted_card = ' A'
 		case 'JK':
 			converted_card = 'JKR'
 	
@@ -114,20 +115,21 @@ def format_card(card:str): ## returns formatted card string
 
 	return converted_card
 
-def format_deck(deck:list): ## returns formated list
-	converted_deck = []
+def format_hand(hand): ## returns formated list
+	converted_hand = []
 
-	for card in deck:
-		converted_deck.append(format_card(card))
+	for card in hand:
+		converted_hand.append(format_card(card))
 
-	return converted_deck
+	return converted_hand
 
-def sort_hand(hand:list): ## takes preformatted hand
+def sort_hand(hand): ## takes preformatted hand
 	global SUIT_ORDER
-	if len(hand) == 1:
-		return hand
+	result = list(hand)
+	if len(result) == 1:
+		return result
 	else:
-		hand.sort()
+		result.sort()
 
 	def get_card_suit_order(card:str):
 		if card == "JKR":
@@ -137,18 +139,19 @@ def sort_hand(hand:list): ## takes preformatted hand
 				return i
 
 	i = 1
-	while i < len(hand):
-		if hand[i][:2] == hand[i-1][:2] and get_card_suit_order(hand[i]) < get_card_suit_order(hand[i-1]):
-			hand.insert(i-1, hand.pop(i))
+	while i < len(result):
+		if result[i][:2] == result[i-1][:2] and get_card_suit_order(result[i]) < get_card_suit_order(result[i-1]):
+			result.insert(i-1, result.pop(i))
 			i = 1
 		else:
 			i += 1
 	
-	return hand
+	return result
 
-def read_hand(hand:list): ## returns outcome as a dict
+def read_hand(hand): ## returns outcome as a dict
+	sorted_hand = sort_hand(hand)
 	outcome = {
-		'hand': hand,
+		'hand': sorted_hand,
 		'rank': '',
 		'rank_points': 0,
 		'has_joker': False,
@@ -159,16 +162,12 @@ def read_hand(hand:list): ## returns outcome as a dict
 		'straight': [],
 		'straight_flush': []
 	}
-	if not hand:
-		return outcome
-	else:
-		hand = sort_hand(hand)
 
 	## count num and suits
 	num_count = {}
 	suit_count = {}
 
-	for card in hand:
+	for card in sorted_hand:
 		if card == "JKR":
 			outcome['has_joker'] = True
 		else:
@@ -185,11 +184,11 @@ def read_hand(hand:list): ## returns outcome as a dict
 	for key, val in num_count.items():
 		if key != '14':
 			if val == 1:
-				for card in hand:
+				for card in sorted_hand:
 					if card[:2] == key:
 						outcome['high_card_order'].append(card)
 		elif val == 1 or (outcome['has_joker'] and val == 0):
-			for card in hand:
+			for card in sorted_hand:
 				if card[:2] == key or card == 'JKR':
 					outcome['high_card_order'].append(card)
 	
@@ -199,12 +198,12 @@ def read_hand(hand:list): ## returns outcome as a dict
 		if key != '14':
 			if val > 1:
 				outcome['multiples'][key] = []
-				for card in hand:
+				for card in sorted_hand:
 					if card[:2] == key:
 						outcome['multiples'][key].append(card)
 		elif val > 1 or (outcome['has_joker'] and val > 0):
 			outcome['multiples'][key] = []
-			for card in hand:
+			for card in sorted_hand:
 				if card[:2] == key or card == 'JKR':
 					outcome['multiples'][key].append(card)
 
@@ -213,12 +212,12 @@ def read_hand(hand:list): ## returns outcome as a dict
 	## get flush
 	for key, val in suit_count.items():
 		if val >= 5 or (val == 4 and outcome['has_joker']):
-			for card in hand:
+			for card in sorted_hand:
 				if card[-1] == key or card == 'JKR':
 					outcome['flush'].append(card)
 
 	## get straight
-	hand_reversed = list(reversed(hand))
+	hand_reversed = list(reversed(sorted_hand))
 	for i, card in enumerate(hand_reversed):
 		if i == 0:
 			outcome['straight'].append(card)
@@ -445,161 +444,183 @@ def house_strat(hand:list):
 	low_hand=[]
 
 	## deconstruct outcome
-	outcome = read_hand(hand)
-	hand = outcome['hand']
-	rank = outcome['rank']
-	rank_points = outcome['rank_points']
-	has_joker = outcome['has_joker']
-	high_card_order = outcome['high_card_order']
-	multiples = outcome['multiples']
-	multiples_keys = outcome['multiples_keys']
-	flush = outcome['flush']
-	straight = outcome['straight']
-	straight_flush = outcome['straight_flush']
-
-	## helper function that takes the seven card hand and either the low or high hand and gets cards for other high or low hand
-	def fill_hand(hand:list, subtract_hand:list):
-		result = hand
-		i = 0
-		while i < len(hand):
-			if hand[i] in subtract_hand:
-				result.pop(i)
-				i = 0
-			else:
-				i += 1
-		return hand
+	OUTCOME = read_hand(hand)
+	HAND = OUTCOME['hand']
+	RANK = OUTCOME['rank']
+	RANK_POINTS = OUTCOME['rank_points']
+	HAS_JOKER = OUTCOME['has_joker']
+	HIGH_CARD_ORDER = OUTCOME['high_card_order']
+	MULTIPLES = OUTCOME['multiples']
+	MULTIPLES_KEYS = OUTCOME['multiples_keys']
+	FLUSH = OUTCOME['flush']
+	STRAIGHT = OUTCOME['straight']
+	STRAIGHT_FLUSH = OUTCOME['straight_flush']
 
 	## there are so many house rules for setting hands so I will be using this guide I found
 	## https://www.stonesgamblinghall.com/portfolio-item/face-up-pai-gow-poker/
 
+	## helper function removes cards of one hand from the other; returns new hand
+	def subtract_hand(hand:list, subtract_hand:list):
+		result = list(hand)
+		i = 0
+		while i < len(result):
+			if result[i] in subtract_hand:
+				result.pop(i)
+				i = 0
+			else:
+				i += 1
+		return result
 
-	if rank_points < 100: ## no pair
-		low_hand = [high_card_order[-3], high_card_order[-2]]
-		high_hand = fill_hand(hand, low_hand)
+	## helper function in case of two pair; returns tuple of hands
+	def two_pair_strat():
+		high_hand=[]
+		low_hand=[]
+		if int(MULTIPLES_KEYS[1]) >= 12: ##if high pair are As, Ks, or Qs then split
+			low_hand = MULTIPLES[MULTIPLES_KEYS[0]]
+			high_hand = subtract_hand(HAND, low_hand)
+		elif 11 >= int(MULTIPLES_KEYS[1]) >= 9: ##if high pair are Js, 10s, or 9s - has A high keep together; else split
+			if  HIGH_CARD_ORDER[-1][:2] == '14' or  HIGH_CARD_ORDER[-1] == 'JKR': 
+				low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+				high_hand = subtract_hand(HAND, low_hand)
+			else:
+				low_hand = MULTIPLES[MULTIPLES_KEYS[0]]
+				high_hand = subtract_hand(HAND, low_hand)
+		elif 8 >= int(MULTIPLES_KEYS[1]) >= 6: ##if high pair are 8s, 7s, or 6s - has K or higher keep together; else split
+			if  HIGH_CARD_ORDER[-1][:2] == '13' or HIGH_CARD_ORDER[-1][:2] == '14' or  HIGH_CARD_ORDER[-1] == 'JKR': 
+				low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+				high_hand = subtract_hand(HAND, low_hand)
+			else:
+				low_hand = MULTIPLES[MULTIPLES_KEYS[0]]
+				high_hand = subtract_hand(HAND, low_hand)
+		elif 8 >= int(MULTIPLES_KEYS[1]) >= 6: ##if high pair are 5s, 4s, or 3s - has Q or higher keep together; else split
+			if  HIGH_CARD_ORDER[-1][:2] == '12' or HIGH_CARD_ORDER[-1][:2] == '13' or HIGH_CARD_ORDER[-1][:2] == '14' or  HIGH_CARD_ORDER[-1] == 'JKR': 
+				low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+				high_hand = subtract_hand(HAND, low_hand)
+			else:
+				low_hand = MULTIPLES[MULTIPLES_KEYS[0]]
+				high_hand = subtract_hand(HAND, low_hand)
+		return high_hand, low_hand
+
+	## helper function in case of straight, flush, or straight flush; takes outcome type as list and returns tuple of hands
+	def straight_flush_strat(type:list):
+		high_hand=[]
+		low_hand=[]
+		if not MULTIPLES_KEYS: ##no pair - keep type; highest possible hand in low hand
+			high_hand = type[:5]
+			low_hand = subtract_hand(HAND, high_hand)
+		elif len(MULTIPLES_KEYS) == 1 and len(MULTIPLES[MULTIPLES_KEYS[0]]) == 2: ##one pair - keep type; highest possible hand in low hand
+			if len(type) == 5:
+				high_hand = type[:5]
+				low_hand = subtract_hand(HAND, high_hand)
+			elif len(type) > 5:
+				high_hand=[]
+				low_hand=[]
+		elif len(MULTIPLES_KEYS) == 2 and len(MULTIPLES[MULTIPLES_KEYS[0]]) == 2 and len(MULTIPLES[MULTIPLES_KEYS[1]]) == 2: ##two pair - keep type with pair in low hand; else two pair strategy
+			high_hand=[]
+			low_hand=[]
+		elif len(MULTIPLES_KEYS) == 1 and len(MULTIPLES[MULTIPLES_KEYS[0]]) == 3: ##three-of-a-kind - keep type with pair or A in low hand
+			high_hand=[]
+			low_hand=[]
+		return high_hand, low_hand
+
+	if RANK_POINTS < 100: ## no pair
+		low_hand = [HIGH_CARD_ORDER[-3], HIGH_CARD_ORDER[-2]]
+		high_hand = subtract_hand(HAND, low_hand)
 		
-	elif rank == 'Pair': ## one pair
-		low_hand = [high_card_order[-2], high_card_order[-1]]
-		high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Pair': ## one pair
+		low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+		high_hand = subtract_hand(HAND, low_hand)
 
-	elif rank == 'Two Pair': ## two pair
-		if int(multiples_keys[1]) >= 12: ##if high pair are As, Ks, or Qs then split
-			low_hand = multiples[multiples_keys[0]]
-			high_hand = fill_hand(hand, low_hand)
-		elif 11 >= int(multiples_keys[1]) >= 9: ##if high pair are Js, 10s, or 9s - has A high keep together; else split
-			if  high_card_order[-1][:2] == '14' or  high_card_order[-1] == 'JKR': 
-				low_hand = [high_card_order[-2], high_card_order[-1]]
-				high_hand = fill_hand(hand, low_hand)
-			else:
-				low_hand = multiples[multiples_keys[0]]
-				high_hand = fill_hand(hand, low_hand)
-		elif 8 >= int(multiples_keys[1]) >= 6: ##if high pair are 8s, 7s, or 6s - has K or higher keep together; else split
-			if  high_card_order[-1][:2] == '13' or high_card_order[-1][:2] == '14' or  high_card_order[-1] == 'JKR': 
-				low_hand = [high_card_order[-2], high_card_order[-1]]
-				high_hand = fill_hand(hand, low_hand)
-			else:
-				low_hand = multiples[multiples_keys[0]]
-				high_hand = fill_hand(hand, low_hand)
-		elif 8 >= int(multiples_keys[1]) >= 6: ##if high pair are 5s, 4s, or 3s - has Q or higher keep together; else split
-			if  high_card_order[-1][:2] == '12' or high_card_order[-1][:2] == '13' or high_card_order[-1][:2] == '14' or  high_card_order[-1] == 'JKR': 
-				low_hand = [high_card_order[-2], high_card_order[-1]]
-				high_hand = fill_hand(hand, low_hand)
-			else:
-				low_hand = multiples[multiples_keys[0]]
-				high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Two Pair': ## two pair
+		high_hand = two_pair_strat()[0]
+		low_hand = two_pair_strat()[1]
 
-	elif rank == 'Three-of-a-kind': ## three-of-a-kind
-		if multiples_keys[0] == '14':	##always play together unless cards are A, then split 2 in high and 1 and low
-			low_hand = [high_card_order[-1], multiples[multiples_keys[0]][0]] ##highest pair in low hand
-			high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Three-of-a-kind': ## three-of-a-kind
+		if MULTIPLES_KEYS[0] == '14':	##always play together unless cards are A, then split 2 in high and 1 and low
+			low_hand = [HIGH_CARD_ORDER[-1], MULTIPLES[MULTIPLES_KEYS[0]][0]] ##highest pair in low hand
+			high_hand = subtract_hand(HAND, low_hand)
 		else:
-			low_hand = [high_card_order[-1], high_card_order[-2]] ##highest pair in low hand
-			high_hand = fill_hand(hand, low_hand)
+			low_hand = [HIGH_CARD_ORDER[-1], HIGH_CARD_ORDER[-2]] ##highest pair in low hand
+			high_hand = subtract_hand(HAND, low_hand)
 
-	elif len(multiples_keys) == 3 and multiples[multiples_keys[0]] == multiples[multiples_keys[1]] == multiples[multiples_keys[2]] == 2: ## three pair with or without straight, flush, or straight flush
-		low_hand = multiples[multiples_keys[2]] ##highest pair in low hand
-		high_hand = fill_hand(hand, low_hand)
+	elif len(MULTIPLES_KEYS) == 3 and MULTIPLES[MULTIPLES_KEYS[0]] == MULTIPLES[MULTIPLES_KEYS[1]] == MULTIPLES[MULTIPLES_KEYS[2]] == 2: ## three pair with or without straight, flush, or straight flush
+		low_hand = MULTIPLES[MULTIPLES_KEYS[2]] ##highest pair in low hand
+		high_hand = subtract_hand(HAND, low_hand)
 
-	elif rank == 'Straight':
-		low_hand = []
-		high_hand =[]
+	elif RANK == 'Straight':
+		high_hand = straight_flush_strat(STRAIGHT)[0]
+		low_hand = straight_flush_strat(STRAIGHT)[1]
 
-		if not multiples_keys: ##no pair - keep straight; highest possible hand in low hand
-			high_hand = straight[:5]
-			low_hand = fill_hand(hand, high_hand)
-		##one pair - keep straight; highest possible hand in low hand
-		##two pair - keep straight with pair in low hand; else two pair strategy
-		##three-of-a-kind - keep straight with pair or A in low hand
+	elif RANK == 'Flush':
+		high_hand = straight_flush_strat(FLUSH)[0]
+		low_hand = straight_flush_strat(FLUSH)[1]
 
-	elif rank == 'Flush':
-		low_hand = []
-		high_hand =[]
-		##no pair - keep flush; highest possible hand in low hand
-		##one pair - keep flush; highest possible hand in low hand
-		##two pair - keep flush with pair in low hand; else two pair strategy
-		##three-of-a-kind - keep flush with pair or A in low hand
+	elif RANK == 'Straight Flush':
+		high_hand = straight_flush_strat(STRAIGHT_FLUSH)[0]
+		low_hand = straight_flush_strat(STRAIGHT_FLUSH)[1]
 
-	elif rank == 'Straight Flush':
-		low_hand = []
-		high_hand =[]
-		##no pair - keep straight flush; highest possible hand in low hand
-		##one pair - keep straight flush; highest possible hand in low hand
-		##two pair - keep straight flush with pair in low hand; else two pair strategy
-		##three-of-a-kind - keep straight flush with pair or A in low hand
-
-	elif rank == 'Full House': ## full house with or without straight, flush, or straight flush
-		if len(multiples_keys) == 2 and len(multiples[multiples_keys[0]]) == len(multiples[multiples_keys[1]]) == 3: ##two of three-of-a-kind - pair from highest three-of-a-kind in low hand
-			low_hand = multiples[multiples_keys[1]][-2:]
-			high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Full House': ## full house with or without straight, flush, or straight flush
+		if len(MULTIPLES_KEYS) == 2 and len(MULTIPLES[MULTIPLES_KEYS[0]]) == len(MULTIPLES[MULTIPLES_KEYS[1]]) == 3: ##two of three-of-a-kind - pair from highest three-of-a-kind in low hand
+			low_hand = MULTIPLES[MULTIPLES_KEYS[1]][-2:]
+			high_hand = subtract_hand(HAND, low_hand)
 		else: ##highest pair in low hand
-			for key in list(reversed(multiples_keys)):
-				if len(multiples[key]) == 2:
-					low_hand = multiples[key]
-					high_hand = fill_hand(hand, low_hand)
+			for key in list(reversed(MULTIPLES_KEYS)):
+				if len(MULTIPLES[key]) == 2:
+					low_hand = MULTIPLES[key]
+					high_hand = subtract_hand(HAND, low_hand)
 					break
 
-	elif rank == 'Four-of-a-kind': ## four of a kind
-		if len(multiples_keys) > 1: ## with pair or three-of-a-kind - pair in low hand
-			for key in multiples_keys:
-				if len(multiples[key]) < 4:
-					low_hand = multiples[key][-2:]
-					high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Four-of-a-kind': ## four of a kind
+		if len(MULTIPLES_KEYS) > 1: ## with pair or three-of-a-kind - pair in low hand
+			for key in MULTIPLES_KEYS:
+				if len(MULTIPLES[key]) < 4:
+					low_hand = MULTIPLES[key][-2:]
+					high_hand = subtract_hand(HAND, low_hand)
 					break
-		elif int(multiples_keys[0]) >= 12:  ## As, Ks, or Qs split
-			low_hand = multiples[multiples_keys[0]][:2]
-			high_hand = fill_hand(hand, low_hand)
-		elif 11 >= int(multiples_keys[0]) >= 9: ## Js, 10s, or 9s - has K or higher keep together; else split
-			if  high_card_order[-1][:2] == '13' or high_card_order[-1][:2] == '14' or  high_card_order[-1] == 'JKR': 
-				low_hand = [high_card_order[-2], high_card_order[-1]]
-				high_hand = fill_hand(hand, low_hand)
+		elif int(MULTIPLES_KEYS[0]) >= 12:  ## As, Ks, or Qs split
+			low_hand = MULTIPLES[MULTIPLES_KEYS[0]][:2]
+			high_hand = subtract_hand(HAND, low_hand)
+		elif 11 >= int(MULTIPLES_KEYS[0]) >= 9: ## Js, 10s, or 9s - has K or higher keep together; else split
+			if  HIGH_CARD_ORDER[-1][:2] == '13' or HIGH_CARD_ORDER[-1][:2] == '14' or  HIGH_CARD_ORDER[-1] == 'JKR': 
+				low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+				high_hand = subtract_hand(HAND, low_hand)
 			else:
-				low_hand = multiples[multiples_keys[0]][:2]
-				high_hand = fill_hand(hand, low_hand)
-		elif 8 >= int(multiples_keys[0]) >= 6: ## 8s, 7s, 6s - has Q or higher keep together; else split
-			if  high_card_order[-1][:2] == '12' or high_card_order[-1][:2] == '13' or high_card_order[-1][:2] == '14' or  high_card_order[-1] == 'JKR': 
-				low_hand = [high_card_order[-2], high_card_order[-1]]
-				high_hand = fill_hand(hand, low_hand)
+				low_hand = MULTIPLES[MULTIPLES_KEYS[0]][:2]
+				high_hand = subtract_hand(HAND, low_hand)
+		elif 8 >= int(MULTIPLES_KEYS[0]) >= 6: ## 8s, 7s, 6s - has Q or higher keep together; else split
+			if  HIGH_CARD_ORDER[-1][:2] == '12' or HIGH_CARD_ORDER[-1][:2] == '13' or HIGH_CARD_ORDER[-1][:2] == '14' or  HIGH_CARD_ORDER[-1] == 'JKR': 
+				low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+				high_hand = subtract_hand(HAND, low_hand)
 			else:
-				low_hand = multiples[multiples_keys[0]][:2]
-				high_hand = fill_hand(hand, low_hand)
-		elif 5 >= int(multiples_keys[0]) >= 2: ## 5s, 4s, 3s, 2s - always keep together
-			low_hand = [high_card_order[-2], high_card_order[-1]]
-			high_hand = fill_hand(hand, low_hand)
+				low_hand = MULTIPLES[MULTIPLES_KEYS[0]][:2]
+				high_hand = subtract_hand(HAND, low_hand)
+		elif 5 >= int(MULTIPLES_KEYS[0]) >= 2: ## 5s, 4s, 3s, 2s - always keep together
+			low_hand = [HIGH_CARD_ORDER[-2], HIGH_CARD_ORDER[-1]]
+			high_hand = subtract_hand(HAND, low_hand)
 
-	elif rank == 'Five Aces': ## five aces
-		low_hand = [multiples['14'][0], multiples['14'][1]] ##play pair of As in low hand
-		high_hand = fill_hand(hand, low_hand)
+	elif RANK == 'Five Aces': ## five aces
+		low_hand = [MULTIPLES['14'][0], MULTIPLES['14'][1]] ##play pair of As in low hand
+		high_hand = subtract_hand(HAND, low_hand)
 
 	## Return and error handling
-	if read_hand(high_hand)['rank_points'] < read_hand(low_hand)['rank_points']:
-		print('Error: low hand is higher than high hand')
-		split = {}
-		return split
+	if not high_hand or not low_hand:
+		print('Error: null hand found', f'high_hand:{high_hand}', f'low_hand{low_hand}')
+		split = {
+			'high': {},
+			'low': {},
+		}
+	elif read_hand(high_hand)['rank_points'] < read_hand(low_hand)['rank_points']:
+		print('Error: low hand is higher than high hand', split)
+		split = {
+			'high': {},
+			'low': {},
+		}
 	else: 
 		split = {
 			'high': read_hand(high_hand),
 			'low': read_hand(low_hand),
 		}
-		return split
+	return split
 	
 def strat_split(hand:list, dealer_split:dict): ## takes 7 card hand list and strat function and returns a split dict
 	split = {
@@ -649,9 +670,8 @@ def determine_winner(player_split:dict, dealer_split:dict):
 	else:
 		return 'Dealer wins'
 
-
-player_hand = dealer_hand = [] 
-split_player_hands = split_dealer_hands = [[],[]] ##[H, L]
+player_hand = []
+dealer_hand = []
 
 def deal_game():
 	global player_hand, dealer_hand
@@ -661,35 +681,49 @@ def deal_game():
 	random.shuffle(game_deck)
 
 	##deal
-	player_hand = game_deck[:7]
+	player_hand = tuple(game_deck[:7])
 	del game_deck[:7]
-	dealer_hand = game_deck[:7]
+	dealer_hand = tuple(game_deck[:7])
 	del game_deck[:7]
 
-def print_game_hands():
-	print("Dealer: ", end='')
-	pretty_print_hand(dealer_hand)
-	print()
-	print("Player: ", end='')
-	pretty_print_hand(player_hand)
-
-def pretty_print_hand(hand: array):
+def pretty_hand(hand):
+	hand = format_hand(hand)
+	result = ''
 	for i, card in enumerate(hand):
 		if card[-1] == "♠" or card[-1] == "♣":
-			console.print(" " + card + " ", style="black on white b", end='')
+			result += f'[black on white b] {card} [/] '
 		elif card[-1] == "♥" or card[-1] == "♦":
-			console.print(" " + card + " ", style="red on white b", end='')
+			result += f'[red on white b] {card} [/] '
 		elif card == "JKR":
-			console.print(" " + card + " ", style="black on white b", end='')\
+			result += f'[black on white b] {card} [/] '
 		
-		if len(hand) != i+1:
-			console.print(" ", end='')
-		else:
-			console.print()
+	return result
 
 deal_game()
-print(read_hand(player_hand))
-print(house_strat(player_hand))
+print(player_hand, read_hand(player_hand))
+print(dealer_hand, read_hand(dealer_hand))
+
+read_player_hand = read_hand(player_hand)
+split_player_hand = house_strat(player_hand)
+read_dealer_hand = read_hand(dealer_hand)
+split_dealer_hand = house_strat(dealer_hand)
+
+table = Table()
+
+table.add_column('', style='red')
+table.add_column('hand')
+table.add_column('rank')
+table.add_column('points')
+
+table.add_row('Player Hand', pretty_hand(read_player_hand['hand']),  str(read_player_hand['rank']), str(read_player_hand['rank_points']))
+table.add_row('House High', pretty_hand(split_player_hand['high']['hand']),  split_player_hand['high']['rank'], str(split_player_hand['high']['rank_points']))
+table.add_row('House Low', pretty_hand(split_player_hand['low']['hand']),  split_player_hand['low']['rank'], str(split_player_hand['low']['rank_points']))
+table.add_row('***', '***',  '***', '***')
+table.add_row('Dealer Hand', pretty_hand(read_dealer_hand['hand']),  read_dealer_hand['rank'], str(read_dealer_hand['rank_points']))
+table.add_row('House High', pretty_hand(split_dealer_hand['high']['hand']),  split_dealer_hand['high']['rank'], str(split_dealer_hand['high']['rank_points']))
+table.add_row('House Low', pretty_hand(split_dealer_hand['low']['hand']),  split_dealer_hand['low']['rank'], str(split_dealer_hand['low']['rank_points']))
+
+console.print(table)
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 
