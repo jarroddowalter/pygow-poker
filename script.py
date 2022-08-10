@@ -14,6 +14,14 @@ test_hand = ['10c', 'JKR', '12c', '13c', '14c', '12d', '13s']
 player_hand = []
 dealer_hand = []
 
+## https://www.vegashowto.com/face-up-pai-gow
+## https://massgaming.com/wp-content/uploads/RULES-Pai-Gow-Poker-8-20-18.pdf
+## https://www.orangecitypoker.com/table-games/face-up-pai-gow
+## https://www.liveabout.com/beating-pai-gow-poker-537016
+## https://wizardofodds.com/games/pai-gow-poker/house-way/foxwoods/
+## https://www.stonesgamblinghall.com/portfolio-item/face-up-pai-gow-poker/
+## https://fallsviewcasinoresort.com/content/dam/fallsview/PDF/Playing/FaceUpPaiGow-HouseWays-EN.pdf
+
 def deal_game():
 	global player_hand, dealer_hand
 
