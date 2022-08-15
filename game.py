@@ -1,4 +1,5 @@
 from itertools import combinations
+import game_configs
 
 DECK = [
 '02h', '02d', '02s', '02c',
@@ -308,7 +309,7 @@ def read_hand(hand): ## returns outcome as a dict
 	#### Score Hand ####
 
 	## 7 Card Straight Flush, No Joker		30000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
-	if outcome['seven_card_straight_flush'] and not outcome['has_joker']:
+	if len(hand) == 7 and outcome['seven_card_straight_flush'] and not outcome['has_joker']:
 		outcome['rank'] = '7 Card Straight Flush, No Joker'
 		if outcome['seven_card_straight_flush'][0][:2] == '14':
 			outcome['rank_points'] = 30001
@@ -317,24 +318,24 @@ def read_hand(hand): ## returns outcome as a dict
 		return outcome
 
 	## Royal Flush Plus Royal Match			20000 + 1-2 royal match rank (A-K > K-Q of same suite/no joker)
-	r_flush = []
-	r_match = []
-	if outcome['straight_flushes'] and (outcome['straight_flushes'][-1][0][:2] == '10' or (outcome['straight_flushes'][-1][0] == 'JKR' and outcome['straight_flushes'][-1][1][:2] == '11')):
+	if len(hand) == 7 and outcome['straight_flushes'] and (outcome['straight_flushes'][-1][0][:2] == '10' or (outcome['straight_flushes'][-1][0] == 'JKR' and outcome['straight_flushes'][-1][1][:2] == '11')):
 		r_flush = outcome['straight_flushes'][-1]
+		r_match = []
 		for card in hand:
 			if card not in r_flush:
 				r_match.append(card)
+		print(r_match)
 		# if r_match[0][-1] == r_match[1][-1] and r_match[0][:2] == '13' and r_match[1][:2] == '14': ## some sources say A K pair counts as a royal match and some don't
 		# 	outcome['rank'] = 'Royal Flush Plus Royal Match'
 		# 	outcome['rank_points'] = 20000 + 1
 		# 	return outcome
-		if r_match[0][-1] == r_match[1][-1] and r_match[0][:2] == '12' and r_match[1][:2] == '13': ## check Q K match
+		if r_match[0][-1] == r_match[1][-1] and r_match[0][:2] == '12' and r_match[1][:2] == '13': ## check Q K suit match
 			outcome['rank'] = 'Royal Flush Plus Royal Match'
 			outcome['rank_points'] = 20000
 			return outcome
 
 	## 7 Card Straight Flush with Joker		10000 + 1-8 straight rank (8-9-10-J-Q-K-A highest)
-	if outcome['seven_card_straight_flush'] and outcome['has_joker']:
+	if len(hand) == 7 and outcome['seven_card_straight_flush'] and outcome['has_joker']:
 		outcome['rank'] = '7 Card Straight Flush with Joker'
 		if outcome['seven_card_straight_flush'][0][:2] == '14':
 			outcome['rank_points'] = 10000 + 1
@@ -354,6 +355,9 @@ def read_hand(hand): ## returns outcome as a dict
 	if outcome['straight_flushes'] and (outcome['straight_flushes'][-1][0][:2] == '10' or (outcome['straight_flushes'][-1][0] == 'JKR' and outcome['straight_flushes'][-1][1][:2] == '11')):
 		outcome['rank'] = 'Royal Flush'
 		outcome['rank_points'] = 8000
+
+		if len(hand) == 5: ## sort hand by royal flush
+			outcome['hand'] = outcome['straight_flushes'][-1]
 		return outcome
 
 	## Straight Flush						7000 + 2-10 straight rank (A-2-3-4-5 highest)
@@ -363,6 +367,9 @@ def read_hand(hand): ## returns outcome as a dict
 			outcome['rank_points'] = 7000 + 10
 		else:
 			outcome['rank_points'] = 7000 + int(outcome['straight_flushes'][-1][-5][:2])
+
+		if len(hand) == 5: ## sort hand by straight flush
+			outcome['hand'] = outcome['straight_flushes'][-1]
 		return outcome
 
 	## Four-of-a-kind						6000 + 2-14 card val
@@ -377,7 +384,11 @@ def read_hand(hand): ## returns outcome as a dict
 	two_key = ''
 	for key in outcome['multiples_keys']:
 		if len(outcome['multiples'][key]) == 3:
-			three_key = key
+			if three_key:
+				two_key = three_key
+				three_key = key
+			else:
+				three_key = key
 		elif len(outcome['multiples'][key]) == 2:
 			two_key = key
 	if three_key and two_key:
@@ -403,6 +414,9 @@ def read_hand(hand): ## returns outcome as a dict
 			outcome['rank_points'] = 3000 + 10
 		else:
 			outcome['rank_points'] = 3000 + int(outcome['straights'][-1][-5][:2])
+
+		if len(hand) == 5: ## sort hand by straight
+			outcome['hand'] = outcome['straights'][-1]
 		return outcome
 
 	## Three-of-a-kind						2000 + 2-14 card val
@@ -414,13 +428,30 @@ def read_hand(hand): ## returns outcome as a dict
 	## Two Pair								1000 + 2-14 high pair card val
 	if len(outcome['multiples_keys']) >= 2 and len(outcome['multiples'][outcome['multiples_keys'][-1]]) == 2 and len(outcome['multiples'][outcome['multiples_keys'][-2]]) == 2:
 		outcome['rank'] = 'Two Pair'
-		outcome['rank_points'] = 1000 + int(outcome['multiples_keys'][-1])
+		high_card_points = 0
+		if outcome['high_card_order'][-1] == 'JKR':
+			high_card_points = 14/10000
+		else:
+			high_card_points = int(outcome['high_card_order'][-1][:2])/10000
+		outcome['rank_points'] = 1000 + int(outcome['multiples_keys'][-1]) + int(outcome['multiples_keys'][-2])/100 + high_card_points
 		return outcome
 
 	## Pair									100 + 2-14 card val
 	if len(outcome['multiples_keys']) == 1 and len(outcome['multiples'][outcome['multiples_keys'][0]]) == 2:
 		outcome['rank'] = 'Pair'
-		outcome['rank_points'] = 100 + int(outcome['multiples_keys'][0])
+		high_card_one_points = 0
+		high_card_two_points = 0
+		high_card_three_points = 0
+		if len(outcome['high_card_order']) >= 3:
+			if outcome['high_card_order'][-1] == 'JKR':
+				high_card_one_points = 14/100
+				high_card_two_points = int(outcome['high_card_order'][-2][:2])/10000
+				high_card_three_points = int(outcome['high_card_order'][-3][:2])/1000000
+			else:
+				high_card_one_points = int(outcome['high_card_order'][-1][:2])/100
+				high_card_two_points = int(outcome['high_card_order'][-2][:2])/10000
+				high_card_three_points = int(outcome['high_card_order'][-3][:2])/1000000
+		outcome['rank_points'] = 100 + int(outcome['multiples_keys'][-1]) + high_card_one_points + high_card_two_points + high_card_three_points
 		return outcome
 
 	## High									2-14 card val
@@ -435,10 +466,24 @@ def read_hand(hand): ## returns outcome as a dict
 			outcome['rank'] = 'J High'
 		else:
 			outcome['rank'] = str(int(outcome['high_card_order'][-1][:2])) + ' High'
+
+		high_card_one_points = 0
+		high_card_two_points = 0
+		high_card_three_points = 0
+		high_card_four_points = 0
+
+		if len(outcome['high_card_order']) >= 5:
+			high_card_one_points = int(outcome['high_card_order'][-2][:2])/100
+			high_card_two_points = int(outcome['high_card_order'][-3][:2])/10000
+			high_card_three_points = int(outcome['high_card_order'][-4][:2])/1000000
+			high_card_four_points = int(outcome['high_card_order'][-5][:2])/100000000
+		elif len(outcome['high_card_order']) == 2:
+			high_card_one_points = int(outcome['high_card_order'][-2][:2])/100
+
 		if outcome['high_card_order'][-1] == 'JKR':
-			outcome['rank_points'] = 14
+			outcome['rank_points'] = 14 + high_card_one_points + high_card_two_points + high_card_three_points + high_card_four_points
 		else:
-			outcome['rank_points'] = int(outcome['high_card_order'][-1][:2])
+			outcome['rank_points'] = int(outcome['high_card_order'][-1][:2]) + high_card_one_points + high_card_two_points + high_card_three_points + high_card_four_points
 		return outcome
 
 ## helper function removes cards of one hand from the other; returns new hand
@@ -478,4 +523,61 @@ def determine_winner(player_split:dict, dealer_split:dict):
 	elif player_split['high']['rank_points'] > dealer_split['high']['rank_points'] or player_split['low']['rank_points'] > dealer_split['low']['rank_points']:
 		return 'Push'
 	else:
-		return 'Dealer wins'
+		return 'Dealer Wins'
+
+def add_bet(bet:dict): ## add bet or total winnings
+	result = bet['ante'] + bet['ace_high'] + bet['fortune'] + bet['progressive'] + bet['envy']
+	return result
+
+def determine_winnings(bet:dict, outcome:str, rank:str, dealer_rank:str, dealer_hand:list):
+	winnings = {
+		'ante': 0,
+		'ace_high': 0,
+		'fortune': 0,
+		'progressive': 0,
+		'envy': 0
+	}
+
+	## ante
+	if outcome == 'Player Wins':
+		winnings['ante'] = bet['ante'] * 2
+	elif outcome == 'Dealer Wins':
+		winnings['ante'] == 0
+	else: ## push
+		winnings['ante'] = bet['ante']
+
+	## ace high
+	if dealer_rank == 'A High' and 'JKR' not in dealer_hand:
+		if type(game_configs.ACE_HIGH_PAYOUT['Dealer A High No Joker']) == int:
+			winnings['ace_high'] = bet['ace_high'] * game_configs.ACE_HIGH_PAYOUT['Dealer A High No Joker']
+		elif type(game_configs.ACE_HIGH_PAYOUT['Dealer A High No Joker']) == str:
+			winnings['ace_high'] = bet['ace_high'] + int(game_configs.ACE_HIGH_PAYOUT['Dealer A High No Joker'])
+	elif dealer_rank == 'A High' and 'JKR' in dealer_hand:
+		if type(game_configs.ACE_HIGH_PAYOUT['Dealer A High with Joker']) == int:
+			winnings['ace_high'] = bet['ace_high'] * game_configs.ACE_HIGH_PAYOUT['Dealer A High with Joker']
+		elif type(game_configs.ACE_HIGH_PAYOUT['Dealer A High with Joker']) == str:
+			winnings['ace_high'] = bet['ace_high'] + int(game_configs.ACE_HIGH_PAYOUT['Dealer A High with Joker'])
+	elif rank == 'A High' and dealer_rank == 'A High':
+		if type(game_configs.ACE_HIGH_PAYOUT['Dealer and Player A High']) == int:
+			winnings['ace_high'] = bet['ace_high'] * game_configs.ACE_HIGH_PAYOUT['Dealer and Player A High']
+		elif type(game_configs.ACE_HIGH_PAYOUT['Dealer and Player A High']) == str:
+			winnings['ace_high'] = bet['ace_high'] + int(game_configs.ACE_HIGH_PAYOUT['Dealer and Player A High'])
+
+	## fortune
+	if rank in game_configs.FORTUNE_BONUS_PAYOUT:
+		if type(game_configs.FORTUNE_BONUS_PAYOUT[rank]) == int:
+			winnings['fortune'] = bet['fortune'] * game_configs.FORTUNE_BONUS_PAYOUT[rank]
+		elif type(game_configs.FORTUNE_BONUS_PAYOUT[rank]) == str:
+			winnings['fortune'] = bet['fortune'] + int(game_configs.FORTUNE_BONUS_PAYOUT[rank])
+
+	## progressive
+	if rank in game_configs.PROGRESSIVE_BONUS_PAYOUT:
+		if type(game_configs.PROGRESSIVE_BONUS_PAYOUT[rank]) == int:
+			winnings['progressive'] = bet['progressive'] * game_configs.PROGRESSIVE_BONUS_PAYOUT[rank]
+		elif type(game_configs.PROGRESSIVE_BONUS_PAYOUT[rank]) == str:
+			winnings['progressive'] = bet['progressive'] + int(game_configs.PROGRESSIVE_BONUS_PAYOUT[rank])
+
+	## envy - not setup yet
+
+
+	return winnings

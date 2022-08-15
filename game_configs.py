@@ -1,5 +1,6 @@
 TABLE_MIN = 15
 TABLE_MAX = 5000
+PLAYER_BANK = 5000
 
 ## Payouts
 ## ints are multipliers and strings are currency amounts

@@ -17,20 +17,20 @@ def player_strat(hand:list, dealer_split:dict): ## takes 7 card hand list and st
 		possible_five_card_hands = list(combinations(hand, 5))
 		for hh in possible_five_card_hands:
 			lh = subtract_hand(hand, hh)
-			if read_hand(hh)['rank_points'] > dealer_high['rank_points'] and read_hand(lh)['rank_points'] > dealer_low['rank_points']:
-				high_hand = hh
-				low_hand = lh
+			if read_hand(hh)['rank_points'] > dealer_high['rank_points'] and read_hand(lh)['rank_points'] > dealer_low['rank_points'] and read_hand(hh)['rank_points'] > read_hand(lh)['rank_points']:
+				high_hand = read_hand(hh)
+				low_hand = read_hand(lh)
 				break
-			elif read_hand(hh)['rank_points'] > dealer_high['rank_points'] and read_hand(hh)['rank_points'] > read_hand(high_hand)['rank_points']:
-				high_hand = hh
-				low_hand = lh
-			elif read_hand(lh)['rank_points'] > dealer_low['rank_points'] and read_hand(lh)['rank_points'] > read_hand(low_hand)['rank_points']:
-				high_hand = hh
-				low_hand = lh
+			elif read_hand(hh)['rank_points'] > dealer_high['rank_points'] and read_hand(hh)['rank_points'] > high_hand['rank_points'] and read_hand(hh)['rank_points'] > read_hand(lh)['rank_points']:
+				high_hand = read_hand(hh)
+				low_hand = read_hand(lh)
+			elif read_hand(lh)['rank_points'] > dealer_low['rank_points'] and read_hand(lh)['rank_points'] > low_hand['rank_points'] and read_hand(hh)['rank_points'] > read_hand(lh)['rank_points']:
+				high_hand = read_hand(hh)
+				low_hand = read_hand(lh)
 
 	split = {
-		'high': read_hand(high_hand),
-		'low': read_hand(low_hand),
+		'high': high_hand,
+		'low': low_hand,
 	}
 
 	return split
