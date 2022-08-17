@@ -1,4 +1,6 @@
+from cgitb import reset
 from itertools import combinations
+from unittest import result
 import game_configs
 
 DECK = [
@@ -542,7 +544,7 @@ def determine_winnings(bet:dict, outcome:str, rank:str, dealer_rank:str, dealer_
 	if outcome == 'Player Wins':
 		winnings['ante'] = bet['ante'] * 2
 	elif outcome == 'Dealer Wins':
-		winnings['ante'] == 0
+		winnings['ante'] = 0
 	else: ## push
 		winnings['ante'] = bet['ante']
 
@@ -581,3 +583,9 @@ def determine_winnings(bet:dict, outcome:str, rank:str, dealer_rank:str, dealer_
 
 
 	return winnings
+
+def sort_dict(d:dict):
+	result = {}
+	for key in sorted(d.keys()):
+		result[key] = d[key]
+	return result

@@ -6,8 +6,7 @@ from rich.console import Console
 console = Console()
 
 import game_configs
-from game import DECK, format_hand, read_hand, determine_winner, add_bet, determine_winnings
-import game_configs
+from game import DECK, format_hand, read_hand, determine_winner, add_bet, determine_winnings, sort_dict
 from house_strat import house_strat
 from player_strat import player_strat
 from betting_strat import betting_strat
@@ -57,9 +56,11 @@ dealer_win_count = 0
 push_count = 0
 a_high_pai_gow_count = 0
 longest_loss_streak = 0
-longest_loss_streak_count = 0
+loss_streak = 0
+loss_streak_distribution = {}
 longest_win_streak = 0
-longest_win_streak_count = 0
+win_streak = 0
+win_streak_distribution = {}
 
 dealer_a_high_no_jkr = 0
 dealer_a_high_jkr = 0
@@ -96,16 +97,26 @@ last_bet = {}
 last_rank = ''
 last_outcome = ''
 player_bank = game_configs.PLAYER_BANK
+highest_bank = lowest_bank = player_bank
 
 r = 0
 while r < simulations:
-	bet = betting_strat(player_bank, last_rank, last_outcome, last_bet)
+	if player_bank >= game_configs.WALK_AMOUNT:
+		console.print('[bold green]Walk with gain![/bold green]')
+		console.print('')
+		break
+	bet = betting_strat(player_bank, last_rank, last_outcome, last_bet, win_streak, loss_streak)
 	if add_bet(bet) > player_bank:
 		console.print('[bold red]End Simulation: Not enough funds to play betting strategy[/bold red]')
 		console.print('')
 		break
 	last_bet = bet
 	player_bank -= add_bet(bet)
+	ante_winnings -= bet['ante']
+	ace_high_winnings -= bet['ace_high']
+	fortune_winnings -= bet['fortune']
+	progressive_winnings -= bet['progressive']
+	envy_winnings -= bet['envy']
 
 	deal_game()
 	read_dealer_hand = read_hand(dealer_hand)
@@ -122,8 +133,9 @@ while r < simulations:
 
 	winnings = determine_winnings(bet, outcome, read_player_hand['rank'], read_dealer_hand['rank'], read_dealer_hand['hand'])
 	if winnings['ante'] > 0:
-		ante_wins += 1
 		ante_winnings += winnings['ante']
+		if winnings['ante'] > bet['ante']:
+			ante_wins += 1
 	if winnings['ace_high'] > 0:
 		ace_high_wins += 1
 		ace_high_winnings += winnings['ace_high']
@@ -193,16 +205,22 @@ while r < simulations:
 	
 	if outcome == 'Player Wins':
 		player_win_count += 1
-		longest_win_streak_count += 1
-		if longest_win_streak_count > longest_win_streak:
-			longest_win_streak = longest_win_streak_count
-		longest_loss_streak_count = 0
+		win_streak += 1
+		
+		if loss_streak > 0 and str(loss_streak) in loss_streak_distribution:
+			loss_streak_distribution[str(loss_streak)] += 1
+		elif loss_streak > 0:
+			loss_streak_distribution[str(loss_streak)] = 1
+		loss_streak = 0
 	elif outcome == 'Dealer Wins':
 		dealer_win_count += 1
-		longest_loss_streak_count += 1
-		if longest_loss_streak_count > longest_loss_streak:
-			longest_loss_streak = longest_loss_streak_count
-		longest_win_streak_count = 0
+		loss_streak += 1
+
+		if win_streak > 0 and str(win_streak) in win_streak_distribution:
+			win_streak_distribution[str(win_streak)] += 1
+		elif win_streak > 0:
+			win_streak_distribution[str(win_streak)] = 1
+		win_streak = 0
 	elif outcome == 'Push':
 		push_count += 1
 	elif outcome == 'Push - A High Pai Gow':
@@ -245,6 +263,11 @@ while r < simulations:
 	elif read_player_hand['rank'] == '7 Card Straight Flush, No Joker':
 		scsfnj_count += 1
 
+	if player_bank > highest_bank:
+		highest_bank = player_bank
+	elif player_bank < lowest_bank:
+		lowest_bank = player_bank
+
 	r += 1
 	console.print(table)
 
@@ -252,8 +275,8 @@ console.print(f'Player Wins: {player_win_count/simulations * 100}%')
 console.print(f'Dealer Wins: {dealer_win_count/simulations * 100}%')
 console.print(f'Push: {push_count/simulations * 100}%')
 console.print(f'A High Pai Gow: {a_high_pai_gow_count/simulations * 100}%')
-console.print(f'Longest Loss Streak: {longest_loss_streak}')
-console.print(f'Longest Win Streak: {longest_win_streak}')
+console.print(f'Loss Streak Distribution: {sort_dict(loss_streak_distribution)}')
+console.print(f'Win Streak Distribution: {sort_dict(win_streak_distribution)}')
 console.print('')
 console.print(f'Dealer A High, No Joker: {dealer_a_high_no_jkr/simulations * 100}%')
 console.print(f'Dealer A High with Joker: {dealer_a_high_jkr/simulations * 100}%')
@@ -288,6 +311,8 @@ console.print('')
 console.print(f'Total Winnings: {player_bank - game_configs.PLAYER_BANK}')
 console.print(f'Starting Bank: {game_configs.PLAYER_BANK}')
 console.print(f'Ending Bank: {player_bank}')
+console.print(f'Highest Bank: {highest_bank}')
+console.print(f'Lowest Bank: {lowest_bank}')
 
 ##Functions for house strategy and player strategy should take a hand (array of strings) and return split hands (array of two arrays of strings; first being the high hand and second being the low hand). House strategy is set while player strategy can take dealer cards into account if face-up variant.
 

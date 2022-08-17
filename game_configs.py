@@ -1,6 +1,7 @@
 TABLE_MIN = 15
 TABLE_MAX = 5000
-PLAYER_BANK = 5000
+PLAYER_BANK = 3000
+WALK_AMOUNT = 3200
 
 ## Payouts
 ## ints are multipliers and strings are currency amounts
@@ -41,6 +42,6 @@ PROGRESSIVE_BONUS_PAYOUT = { ## typically just a $1 bet
 	'Royal Flush': 500,
 	'Five Aces': '25000.00',
 	'7 Card Straight Flush with Joker': '150000.00',
-	'Royal Flush Plus Royal Match': 0,
-	'7 Card Straight Flush, No Joker': '150000.00'
+	'Royal Flush Plus Royal Match': '750000.00',
+	'7 Card Straight Flush, No Joker': '1500000.00'
 }
