@@ -1,9 +1,9 @@
 def betting_strat(player_bank:int, last_rank:str, last_outcome:str, last_bet:dict, win_streak:int, loss_streak:int):
-	ante = 20 ## ante unit
+	ante = 15 ## ante unit
 
 	## Modified Martingale System
-	ladder_top = 8
-	second_bonus = 10
+	ladder_top = 20
+	second_bonus = 15
 	if last_outcome == 'Player Wins':
 		ante = ante
 	elif last_outcome == 'Dealer Wins' and last_bet:

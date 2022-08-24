@@ -11,9 +11,15 @@ from house_strat import house_strat
 from player_strat import player_strat
 from betting_strat import betting_strat
 
-test_hand = ['10c', 'JKR', '12c', '13c', '14c', '12d', '13s']
+test_hand = ['10d', '11d', '11c', '11s', '13d', '14d', 'JKR']
 player_hand = []
 dealer_hand = []
+
+## Error Hands
+## ['10d', '11d', '11c', '11s', '13d', '14d', 'JKR']
+## ['10h', '11h', '13h', '14d', '14h', '14c', 'JKR']
+## ['03s', '08d', '14d', '14h', '14c', '14s', 'JKR']
+## ['10s', '11s', '13h', '13c', '13s', '14s', 'JKR']
 
 ## https://www.vegashowto.com/face-up-pai-gow
 ## https://massgaming.com/wp-content/uploads/RULES-Pai-Gow-Poker-8-20-18.pdf
@@ -123,9 +129,9 @@ while r < simulations:
 	read_player_hand = read_hand(player_hand)
 	last_rank = read_player_hand['rank']
 
-	# print(read_dealer_hand)
+	print(read_dealer_hand)
 	split_dealer_hand = house_strat(dealer_hand)
-	# print(read_player_hand)
+	print(read_player_hand)
 	split_player_hand = player_strat(player_hand, split_dealer_hand)
 
 	outcome = determine_winner(split_player_hand, split_dealer_hand)
@@ -271,41 +277,41 @@ while r < simulations:
 	r += 1
 	console.print(table)
 
-console.print(f'Player Wins: {player_win_count/simulations * 100}%')
-console.print(f'Dealer Wins: {dealer_win_count/simulations * 100}%')
-console.print(f'Push: {push_count/simulations * 100}%')
-console.print(f'A High Pai Gow: {a_high_pai_gow_count/simulations * 100}%')
+console.print(f'Player Wins: {player_win_count/r * 100}%')
+console.print(f'Dealer Wins: {dealer_win_count/r * 100}%')
+console.print(f'Push: {push_count/r * 100}%')
+console.print(f'A High Pai Gow: {a_high_pai_gow_count/r * 100}%')
 console.print(f'Loss Streak Distribution: {sort_dict(loss_streak_distribution)}')
 console.print(f'Win Streak Distribution: {sort_dict(win_streak_distribution)}')
 console.print('')
-console.print(f'Dealer A High, No Joker: {dealer_a_high_no_jkr/simulations * 100}%')
-console.print(f'Dealer A High with Joker: {dealer_a_high_jkr/simulations * 100}%')
-console.print(f'Dealer and Player A High: {dp_a_high/simulations * 100}%')
+console.print(f'Dealer A High, No Joker: {dealer_a_high_no_jkr/r * 100}%')
+console.print(f'Dealer A High with Joker: {dealer_a_high_jkr/r * 100}%')
+console.print(f'Dealer and Player A High: {dp_a_high/r * 100}%')
 console.print('')
-console.print(f'High Card: {high_count/simulations * 100}%')
-console.print(f'Pair: {pair_count/simulations * 100}%')
-console.print(f'Two Pair: {two_pair_count/simulations * 100}%')
-console.print(f'Three-of-a-kind: {toak_count/simulations * 100}%')
-console.print(f'Straight: {straight_count/simulations * 100}%')
-console.print(f'Flush: {flush_count/simulations * 100}%')
-console.print(f'Full House: {full_house_count/simulations * 100}%')
-console.print(f'Four-of-a-kind: {foak_count/simulations * 100}%')
-console.print(f'Straight Flush: {sf_count/simulations * 100}%')
-console.print(f'Royal Flush: {rf_count/simulations * 100}%')
-console.print(f'Five Aces: {five_a_count/simulations * 100}%')
-console.print(f'7 Card Straight Flush with Joker: {scsf_count/simulations * 100}%')
-console.print(f'Royal Flush Plus Royal Match: {rfrm_count/simulations * 100}%')
-console.print(f'7 Card Straight Flush, No Joker: {scsfnj_count/simulations * 100}%')
+console.print(f'High Card: {high_count/r * 100}%')
+console.print(f'Pair: {pair_count/r * 100}%')
+console.print(f'Two Pair: {two_pair_count/r * 100}%')
+console.print(f'Three-of-a-kind: {toak_count/r * 100}%')
+console.print(f'Straight: {straight_count/r * 100}%')
+console.print(f'Flush: {flush_count/r * 100}%')
+console.print(f'Full House: {full_house_count/r * 100}%')
+console.print(f'Four-of-a-kind: {foak_count/r * 100}%')
+console.print(f'Straight Flush: {sf_count/r * 100}%')
+console.print(f'Royal Flush: {rf_count/r * 100}%')
+console.print(f'Five Aces: {five_a_count/r * 100}%')
+console.print(f'7 Card Straight Flush with Joker: {scsf_count/r * 100}%')
+console.print(f'Royal Flush Plus Royal Match: {rfrm_count/r * 100}%')
+console.print(f'7 Card Straight Flush, No Joker: {scsfnj_count/r * 100}%')
 console.print('')
-console.print(f'Ante Wins: {ante_wins/simulations * 100}%')
+console.print(f'Ante Wins: {ante_wins/r * 100}%')
 console.print(f'Ante Winnings: {ante_winnings}')
-console.print(f'A High Wins: {ace_high_wins/simulations * 100}%')
+console.print(f'A High Wins: {ace_high_wins/r * 100}%')
 console.print(f'A High Winnings: {ace_high_winnings}')
-console.print(f'Fortune Wins: {fortune_wins/simulations * 100}%')
+console.print(f'Fortune Wins: {fortune_wins/r * 100}%')
 console.print(f'Fortune Winnings: {fortune_winnings}')
-console.print(f'Progressive Wins: {progressive_wins/simulations * 100}%')
+console.print(f'Progressive Wins: {progressive_wins/r * 100}%')
 console.print(f'Progressive Winnings: {progressive_winnings}')
-console.print(f'Envy Wins: {envy_wins/simulations * 100}%')
+console.print(f'Envy Wins: {envy_wins/r * 100}%')
 console.print(f'Envy Winnings: {envy_winnings}')
 console.print('')
 console.print(f'Total Winnings: {player_bank - game_configs.PLAYER_BANK}')
