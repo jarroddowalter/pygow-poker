@@ -1,4 +1,5 @@
 venv/
 src/pygow_poker.egg-info/
+src/pygow-poker/__pycache__/
 dist/
-docs/build
+docs/build/

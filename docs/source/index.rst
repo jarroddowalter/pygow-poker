@@ -3,9 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-pygow-poker Documentation
-=======================================
-blah blah blah some info here
+.. include:: ../../README.md
+   :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: 2
@@ -13,6 +12,7 @@ blah blah blah some info here
 	
    installation.md
    development.md
+   data-types.md
    license
 
 

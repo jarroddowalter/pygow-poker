@@ -128,9 +128,10 @@ while r < simulations:
 	read_player_hand = read_hand(player_hand)
 	last_rank = read_player_hand['rank']
 
-	print(read_dealer_hand)
+	# print(read_dealer_hand)
 	split_dealer_hand = house_strat(dealer_hand)
-	print(read_player_hand)
+	print(split_dealer_hand)
+	# print(read_player_hand)
 	split_player_hand = player_strat(player_hand, split_dealer_hand)
 
 	outcome = determine_winner(split_player_hand, split_dealer_hand)

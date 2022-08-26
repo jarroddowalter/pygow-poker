@@ -1,3 +1,9 @@
-# Installation
+## Installation
 
-Some installation documentation
+Requires Python 3.6+
+
+Simple PyPI install
+
+```
+pip install pygow-poker
+```
