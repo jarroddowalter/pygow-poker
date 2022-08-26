@@ -12,6 +12,7 @@ blah blah blah some info here
    :caption: Contents:
 	
    installation.md
+   development.md
    license
 
 
