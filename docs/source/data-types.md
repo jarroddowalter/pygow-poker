@@ -8,7 +8,11 @@
 **Hand** - list
 
 > A list of cards.
-> Example: ['02s', '08h', '13c', '05d', '11s']
+> Example:
+
+```
+['02s', '08h', '13c', '05d', '11s']
+```
 
 **Bank** - integer
 
@@ -81,6 +85,14 @@ bet = {
 	'progressive': 1,
 	'envy': 0
 }
+
+winnings = {
+	'ante': 50,
+	'ace_high': 0,
+	'fortune': 0,
+	'progressive': 0,
+	'envy': 0
+}
 ```
 
 **Result** - string
@@ -94,13 +106,13 @@ bet = {
 'Push - A High Pai Gow'
 ```
 
-**Table** - dict
+**Game** - dict
 
 > A dictionary that represents all hands, splits, banks, bets, and winnings in a single game of Pai Gow Poker.
 > Example:
 
 ```
-table = {
+game = {
 	'player_start_bank': 1000,
 	'bet': bet,
     'player_hand': player_seven_card_hand,

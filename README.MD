@@ -8,7 +8,7 @@ Pai Gow Poker is an engaging table game inspired by the Chinese domino game Pai 
 
 1. Both player hands beat both dealer hands results in a win (doubles bet)
 2. Both dealer hands beat both player hands results in a loss (lose bet)
-3. The player beats one dealer hand and loses the other results in a push (tie)
+3. The player beats one dealer hand and loses the other results in a push (tie, no bet loss)
 
 [Visit here](https://wizardofodds.com/games/pai-gow-poker/) for a more in-depth explanation of the rules, strategies, and variants of Pai Gow Poker.
 
