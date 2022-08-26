@@ -115,8 +115,8 @@ winnings = {
 game = {
 	'player_start_bank': 1000,
 	'bet': bet,
-    'player_hand': player_seven_card_hand,
-    'player_split': player_split,
+	'player_hand': player_seven_card_hand,
+	'player_split': player_split,
 	'dealer_hand': dealer_seven_card_hand,
 	'dealer_split': dealer_split,
 	'result': 'Player Wins'
