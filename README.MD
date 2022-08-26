@@ -45,3 +45,9 @@ pip install --upgrade twine
 
 python -m twine upload dist/*
 ```
+
+Docs Build
+
+```
+sphinx-build docs/source docs/build
+```
