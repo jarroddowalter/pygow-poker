@@ -1,6 +1,4 @@
-from cgitb import reset
 from itertools import combinations
-from unittest import result
 import game_configs
 
 DECK = [

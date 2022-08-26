@@ -1,5 +1,4 @@
 import random
-from pygments import highlight
 from rich import print
 from rich.table import Table
 from rich.console import Console

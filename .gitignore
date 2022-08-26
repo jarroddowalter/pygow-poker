@@ -1,1 +1,3 @@
-__pycache__/
+venv/
+src/pygow_poker.egg-info/
+dist/

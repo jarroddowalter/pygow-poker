@@ -1,19 +1,38 @@
-## Ultimate Pai Gow
+# pygow-poker
 
 Simulate or play your favorite pai gow poker variant with python!
 
-Created by Jarrod Dowalter
+## Installation
+
+Run the following to install
+
+```
+pip install pygow-poker
+```
 
 On init (Windows)
-`python -m virtualenv venv`
 
-`source venv/Scripts/activate`
+```
+python -m virtualenv venv
 
-`pip install -r requirements.txt`
+source venv/Scripts/activate
+
+pip install -r dev-requirements.txt
+```
 
 On init (Mac)
-`virtualenv venv`
 
-`source venv/bin/activate`
+```
+virtualenv venv
 
-`pip install -r requirements.txt`
+source venv/bin/activate
+
+pip install -r dev-requirements.txt
+```
+
+Build
+
+```
+pip install --upgrade build
+python -m build
+```
