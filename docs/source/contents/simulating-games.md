@@ -1,3 +1,0 @@
-# Simulation
-
-Some simulation documentation
