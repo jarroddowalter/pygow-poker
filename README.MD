@@ -34,5 +34,14 @@ Build
 
 ```
 pip install --upgrade build
+
 python -m build
+```
+
+Publish
+
+```
+pip install --upgrade twine
+
+python -m twine upload dist/*
 ```
