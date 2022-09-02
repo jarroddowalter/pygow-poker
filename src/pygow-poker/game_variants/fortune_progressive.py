@@ -1,16 +1,16 @@
+###############
+## Game Configs
+###############
+
+NAME = 'Fortune Pai Gow Poker Progressive'
+
 TABLE_MIN = 15
+
 TABLE_MAX = 5000
-PLAYER_BANK = 100000000000
-WALK_AMOUNT = 10000000000000
 
-## Payouts
-## ints are multipliers and strings are currency amounts
-ACE_HIGH_PAYOUT = {
-	'Dealer A High No Joker': 5,
-	'Dealer A High with Joker': 15,
-	'Dealer and Player A High': 40
-}
+COMMISSION = 0.05 ## percentage
 
+## Payouts - ints are multipliers and strings are currency amounts
 FORTUNE_BONUS_PAYOUT = {
 	'Straight': 2,
 	'Three-of-a-kind': 3,
@@ -25,16 +25,6 @@ FORTUNE_BONUS_PAYOUT = {
 	'7 Card Straight Flush, No Joker': 5000
 }
 
-FORTUNE_ENVY_BONUS_PAYOUT = { ## in $; typically $5 or more qualifies on fortune bonus
-	'Four-of-a-kind': '5.00',
-	'Straight Flush': '20.00',
-	'Royal Flush': '50.00',
-	'Five Aces': '250.00',
-	'7 Card Straight Flush with Joker': '500.00',
-	'Royal Flush Plus Royal Match': '1000.00',
-	'7 Card Straight Flush, No Joker': '3000.00'
-}
-
 PROGRESSIVE_BONUS_PAYOUT = { ## typically just a $1 bet
 	'Full House': 4,
 	'Four-of-a-kind': 75,
@@ -45,3 +35,7 @@ PROGRESSIVE_BONUS_PAYOUT = { ## typically just a $1 bet
 	'Royal Flush Plus Royal Match': '750000.00',
 	'7 Card Straight Flush, No Joker': '1500000.00'
 }
+
+###############
+## Game Logic
+###############

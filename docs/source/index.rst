@@ -6,6 +6,7 @@
 pygow-poker
 ===========
 
+Version: 0.0.1
 Simulate or play Pai Gow Poker!
 
 Game Rules
