@@ -3,7 +3,6 @@ from itertools import combinations
 
 SUIT_ORDER = ["d", "h", "c", "s"]
 
-
 def deal_game():  ## returns list of participant hands
     GAME_DECK = [
         "02h", "02d", "02s", "02c",
@@ -37,7 +36,6 @@ def deal_game():  ## returns list of participant hands
 
     return game_hands
 
-
 def sort_hand(hand):  ## sorts hand from least to greatest value
     result = list(hand)
     if len(result) == 1:
@@ -63,7 +61,6 @@ def sort_hand(hand):  ## sorts hand from least to greatest value
             i += 1
 
     return result
-
 
 def get_outcome(hand):  ## returns outcome as a dict from hand
     sorted_hand = sort_hand(hand)
@@ -533,7 +530,6 @@ def get_outcome(hand):  ## returns outcome as a dict from hand
             )
         return outcome
 
-
 def subtract_hand(hand: list, subtract_hand: list):
     result = list(hand)
     i = 0
@@ -544,7 +540,6 @@ def subtract_hand(hand: list, subtract_hand: list):
         else:
             i += 1
     return result
-
 
 def custom_split(
     high_hand: list, low_hand: list
@@ -565,7 +560,6 @@ def custom_split(
 
     return split
 
-
 def add_bet(bet: dict):  ## add bet or total winnings
     result = (
         bet["ante"]
@@ -576,17 +570,14 @@ def add_bet(bet: dict):  ## add bet or total winnings
     )
     return result
 
-
 def sort_dict(d: dict):
     result = {}
     for key in sorted(d.keys()):
         result[key] = d[key]
     return result
 
-
 ## Formatting Functions
 #######################
-
 
 def format_card(card: str):  ## takes card string and formats for print
     converted_card = ""
@@ -633,7 +624,6 @@ def format_card(card: str):  ## takes card string and formats for print
 
     return converted_card
 
-
 def format_hand(hand):  ## takes hand as list and formats for print
     converted_hand = []
 
@@ -641,7 +631,6 @@ def format_hand(hand):  ## takes hand as list and formats for print
         converted_hand.append(format_card(card))
 
     return converted_hand
-
 
 def rich_pretty_hand(hand):  ## formats hand for rich print
     hand = format_hand(hand)

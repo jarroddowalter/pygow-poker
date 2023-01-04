@@ -4,7 +4,7 @@ import common
 ## Game Configs
 ###############
 
-NAME = 'Pai Gow Poker'
+NAME = 'Standard Pai Gow Poker'
 TABLE_MIN = 15
 TABLE_MAX = 5000
 COMMISSION = 0.05 ## percentage
@@ -58,3 +58,9 @@ game = {
 	'winnings': winnings,
 	'player_end_bank': 1100
 }
+
+##Player Bets
+##Deal Cards
+##Player Splits Cards
+##Dealer Splits Cards
+##Determine Result and Winnings
