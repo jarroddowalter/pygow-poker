@@ -48,6 +48,7 @@ def determine_winnings(bet:dict, result:str):
 ###############
 
 game = {
+	'status': ,
 	'player_start_bank': 1000,
 	'bet': bet,
 	'player_hand': player_seven_card_hand,

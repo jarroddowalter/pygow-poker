@@ -1,19 +1,24 @@
 #Simulate or Play?
 
 ##Simulate
+##List Available Game Variants
 ##Game Variant?
+##List Available Betting Strats
 ##Betting Stat?
+##Starting Bank?
 ##Num of Games?
 ##RUN AND EXPORT CSV
 
 ##Play
-##Game Variant
-##Starting Bank
+##List Available Game Variants
+##Game Variant?
+##Starting Bank?
 ##PLAY SCRIPT
 
 ###Play Script
-###Show Empty Table
-###Bet?
+##List Available Game Variants
+###Show Table
+###Bet? New Numbers or Rebet
 ###Show Table
 ###Split Action?
 ###Show Table
